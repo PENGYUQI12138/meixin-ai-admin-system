@@ -61,6 +61,16 @@ git log --oneline -5
 - 增加 `.gitattributes`，确保 Windows Git 检出后测试入口 shell 脚本仍使用 LF。
 - 最终静态检查、Compose 配置校验、秘密扫描通过；完整 27 项再次通过；重启后的全新课表页控制台仍为 0 error、0 warn。
 
+### 阶段 6：开发/试点站点安装与服务冒烟（已完成）
+
+- 用户明确确认容器切换后，构建固定原版本 digest 的派生镜像，并仅用 `--no-deps` 重建六个应用容器。
+- 数据库、Redis、站点、日志及其他持久化卷未重建或删除；未运行 configurator/create-site，未升级 Frappe/ERPNext。
+- `frontend` 已成功安装 `meixin_admin 0.1.0`；`install-app`、`migrate`、`clear-cache` 均以退出码 0 完成。
+- 所有相关容器已恢复运行，数据库健康；首页、登录页 HTTP 200，Socket.IO 握手有效。
+- 已只读确认 7 个 DocType、两个业务角色、Workspace/Sidebar/Desktop Icon、机构默认值和 `Asia/Chongqing` 时区。
+- Guest 访问美心上下文及日历 API 均为 HTTP 403；最近应用日志无 Traceback/ERROR/CRITICAL/ModuleNotFoundError。
+- 未运行演示初始化、未创建账号、未在 `frontend` 运行测试套件。
+
 ## 修改文件
 
 - App 元数据与钩子：`pyproject.toml`、`meixin_admin/hooks.py`、`modules.txt`、`patches.txt`。
@@ -83,17 +93,17 @@ git log --oneline -5
 - 2026-09-21 首次重跑最新 27 项时，Frappe 16 顶层 `frappe.has_permission` 不接受 `print_logs`，27 项均在同一入口报错；修为 `frappe.permissions.has_permission` 的版本兼容调用后再次完整运行，结果为 `Ran 27 tests in 10.790s / OK`。
 - 最终复核修复后再次完整运行：`Ran 27 tests in 13.350s / OK`，0 失败、0 错误、0 跳过。
 - 浏览器已实际走通工作台→建档→排课→提交→冲突→周课表；全新最终课表页控制台 0 error、0 warn。
-- 目标 `frontend` 尚未安装 M1；因此现场安装与运行未验证。
+- 目标 `frontend` 已完成安装、迁移及服务/API 冒烟；登录后的可视点击检查尚待完成。
 
 ## 未完成事项
 
-- 在切换试点应用容器前说明中断影响并等待用户最终确认；之后才可安装到 `frontend`。
-- 试点安装后再次跑迁移、角色/入口/API 冒烟与人工验收；不在试点站点运行测试套件。
+- 用户在已打开的 `http://localhost:8080` 登录页完成登录后，检查目标工作台、表单入口和周课表；不创建真实数据。
 
 ## 下一步操作
 
-1. 汇总可审阅的试点安装步骤和中断影响，向用户请求切换应用容器的最终确认。
-2. 获得确认后安装到 `frontend`，只做迁移、权限/入口/API 冒烟与人工验收，不运行测试套件。
+1. 用户在已打开的目标站点登录页完成登录。
+2. 完成工作台、档案新建入口、排课新建入口、周课表和控制台的可视冒烟。
+3. 更新验收记录与本文件，提交最终 Git commit，然后按 M1 范围停止。
 
 ## 明确停止范围
 

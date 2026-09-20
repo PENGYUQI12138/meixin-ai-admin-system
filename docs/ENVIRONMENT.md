@@ -60,7 +60,7 @@ docker exec frappe_docker-backend-1 bash -lc 'cd /home/frappe/frappe-bench && be
 
 容器位置 `/home/frappe/frappe-bench/sites/frontend/private/backups/`，属于持久卷。另复制到宿主机 **`D:\FrappeProject\backups\meixin-m1-20260920`**，在原仓库与交付源码之外，未入 Git。已计算 SHA256；请把该目录作为敏感备份保存，不公开上传，不把配置内容贴到聊天。
 
-## Docker 安装命令（需确认切换应用容器）
+## Docker 安装命令（已获确认并执行）
 
 在 PowerShell，先进入交付 App 根目录，再运行：
 
@@ -72,6 +72,17 @@ docker exec frappe_docker-backend-1 bash -lc 'cd /home/frappe/frappe-bench && be
 ```
 
 上面的 `--no-deps` 很重要：不启动 configurator/create-site，也不重建数据库。首次安装后 `sites/apps.txt` 追加一行 `meixin_admin`，保留原 App 列表。以后源码改动重新构建衍生镜像、切换应用容器，执行 `migrate`；不要再用只有原 `pwd.yml` 的 `up` 覆盖自定义镜像。
+
+### 2026-09-21 实际安装结果
+
+- 用户确认影响后，固定基础镜像 digest 的 `meixin-admin:m1-frappe16.34.0` 构建成功。
+- 仅使用 `--no-deps` 重建 `backend`、`frontend`、`websocket`、`queue-short`、`queue-long`、`scheduler`；未运行 configurator/create-site，数据库与两个 Redis 容器未重建。
+- `install-app meixin_admin`、`migrate`、`clear-cache` 均以退出码 0 完成；安装后重启六个应用服务，使其加载新 App。
+- 站点 `list-apps` 为 frappe 16.34.0、erpnext 16.35.0、meixin_admin 0.1.0，原框架版本未变化。
+- 九个相关容器均运行，MariaDB 健康；首页和登录页 HTTP 200，Socket.IO 返回有效握手包。
+- 7 个 MX DocType、两个业务角色、Workspace、Workspace Sidebar、Desktop Icon 和机构默认值均已只读确认；实际站点时区仍为 `Asia/Chongqing`。
+- Guest 调用美心上下文及日历 API 均返回 HTTP 403；最近应用容器日志未发现 Traceback、ERROR、CRITICAL 或 ModuleNotFoundError。
+- 安装没有执行演示初始化，也没有创建业务账号；未在 `frontend` 运行测试套件。
 
 原服务日常启动（只启动存在的容器，不触发 Compose 初始化依赖）：
 
