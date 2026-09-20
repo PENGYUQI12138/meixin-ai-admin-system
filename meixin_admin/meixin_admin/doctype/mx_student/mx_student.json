@@ -1,0 +1,104 @@
+{
+ "doctype": "DocType",
+ "name": "MX Student",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "student_name",
+  "grade",
+  "guardian_name",
+  "guardian_phone",
+  "notes",
+  "enabled",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "student_name",
+   "fieldtype": "Data",
+   "label": "学生姓名",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "姓名可以重复，以系统自动生成的学生编号区分。"
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "label": "年级",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "guardian_name",
+   "fieldtype": "Data",
+   "label": "监护人姓名"
+  },
+  {
+   "fieldname": "guardian_phone",
+   "fieldtype": "Data",
+   "label": "监护人电话",
+   "description": "允许兄弟姐妹共用电话。"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "备注"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "启用",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "演示批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅演示初始化命令填写；真实档案请留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "report": 1,
+   "delete": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "autoname": "MX-STU-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "student_name",
+ "search_fields": "student_name",
+ "show_title_field_in_link": 1
+}

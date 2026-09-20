@@ -1,0 +1,21 @@
+{
+ "doctype": "Desktop Icon",
+ "name": "美心行政",
+ "label": "美心行政",
+ "app": "meixin_admin",
+ "standard": 1,
+ "icon_type": "Link",
+ "icon": "education",
+ "link_type": "Workspace Sidebar",
+ "link_to": "美心行政",
+ "hidden": 0,
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "Meixin Manager"
+  },
+  {
+   "role": "Meixin Scheduler"
+  }
+ ]
+}

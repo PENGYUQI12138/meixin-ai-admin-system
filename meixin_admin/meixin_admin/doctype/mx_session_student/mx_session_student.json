@@ -1,0 +1,30 @@
+{
+ "doctype": "DocType",
+ "name": "MX Session Student",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "student"
+ ],
+ "fields": [
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "学生",
+   "options": "MX Student",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "permissions": [],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "istable": 1,
+ "editable_grid": 1
+}

@@ -1,0 +1,55 @@
+{
+ "doctype": "Workspace Sidebar",
+ "name": "美心行政",
+ "title": "美心行政",
+ "app": "meixin_admin",
+ "module": "Meixin Admin",
+ "standard": 1,
+ "header_icon": "education",
+ "for_user": "",
+ "items": [
+  {
+   "type": "Link",
+   "label": "美心行政",
+   "link_type": "Workspace",
+   "link_to": "美心行政",
+   "icon": "home"
+  },
+  {
+   "type": "Link",
+   "label": "学生档案",
+   "link_type": "DocType",
+   "link_to": "MX Student"
+  },
+  {
+   "type": "Link",
+   "label": "教师档案",
+   "link_type": "DocType",
+   "link_to": "MX Teacher"
+  },
+  {
+   "type": "Link",
+   "label": "课程档案",
+   "link_type": "DocType",
+   "link_to": "MX Course"
+  },
+  {
+   "type": "Link",
+   "label": "教室档案",
+   "link_type": "DocType",
+   "link_to": "MX Room"
+  },
+  {
+   "type": "Link",
+   "label": "单节排课",
+   "link_type": "DocType",
+   "link_to": "MX Session"
+  },
+  {
+   "type": "Link",
+   "label": "机构设置",
+   "link_type": "DocType",
+   "link_to": "MX Settings"
+  }
+ ]
+}

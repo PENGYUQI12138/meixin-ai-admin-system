@@ -1,0 +1,153 @@
+{
+ "doctype": "DocType",
+ "name": "MX Session",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "booking_notice",
+  "title",
+  "course",
+  "teacher",
+  "room",
+  "start_at",
+  "end_at",
+  "students",
+  "notes",
+  "amended_from",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "booking_notice",
+   "fieldtype": "HTML",
+   "label": "排课说明",
+   "options": "<div class=\"alert alert-info\">草稿不占用教师、教室或学生时段；保存后点击“提交”才确认排课。已确认排课须取消后修订，不能直接改动。</div>"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "排课标题",
+   "read_only": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "课程",
+   "options": "MX Course",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "teacher",
+   "fieldtype": "Link",
+   "label": "教师",
+   "options": "MX Teacher",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "label": "教室",
+   "options": "MX Room",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "start_at",
+   "fieldtype": "Datetime",
+   "label": "开始时间",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "end_at",
+   "fieldtype": "Datetime",
+   "label": "结束时间",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "students",
+   "fieldtype": "Table",
+   "label": "学生名单",
+   "options": "MX Session Student",
+   "reqd": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "备注"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "修订来源",
+   "options": "MX Session",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "演示批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅演示初始化命令填写；真实档案请留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "report": 1,
+   "delete": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "start_at",
+ "sort_order": "DESC",
+ "autoname": "MX-SES-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "title",
+ "search_fields": "title",
+ "show_title_field_in_link": 1,
+ "is_submittable": 1,
+ "is_calendar_and_gantt": 1
+}

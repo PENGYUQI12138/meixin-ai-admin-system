@@ -1,0 +1,48 @@
+{
+ "doctype": "DocType",
+ "name": "MX Settings",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "institution_name",
+  "site_time_zone"
+ ],
+ "fields": [
+  {
+   "fieldname": "institution_name",
+   "fieldtype": "Data",
+   "label": "机构名称",
+   "default": "美心",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site_time_zone",
+   "fieldtype": "HTML",
+   "label": "实际站点时区"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 0,
+   "report": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "issingle": 1
+}

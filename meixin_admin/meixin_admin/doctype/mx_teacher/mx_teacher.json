@@ -1,0 +1,92 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "teacher_name",
+  "phone",
+  "user",
+  "enabled",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "teacher_name",
+   "fieldtype": "Data",
+   "label": "教师姓名",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "电话"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "关联用户",
+   "options": "User",
+   "unique": 1,
+   "description": "可留空；同一用户最多关联一名教师。本功能不创建账号或授予角色。"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "启用",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "演示批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅演示初始化命令填写；真实档案请留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "report": 1,
+   "delete": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "autoname": "MX-TCH-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "teacher_name",
+ "search_fields": "teacher_name",
+ "show_title_field_in_link": 1
+}

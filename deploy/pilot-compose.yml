@@ -1,0 +1,16 @@
+# Run together with D:/FrappeProject/frappe_docker/pwd.yml using project frappe_docker.
+# Does NOT change db, redis, sites, logs, ports, or init-service configuration.
+services:
+  backend:
+    image: meixin-admin:m1-frappe16.34.0
+  frontend:
+    image: meixin-admin:m1-frappe16.34.0
+  websocket:
+    image: meixin-admin:m1-frappe16.34.0
+  queue-short:
+    image: meixin-admin:m1-frappe16.34.0
+  queue-long:
+    image: meixin-admin:m1-frappe16.34.0
+  scheduler:
+    image: meixin-admin:m1-frappe16.34.0
+

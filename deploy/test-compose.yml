@@ -1,0 +1,49 @@
+name: meixin_m1_test
+
+# Independent test resources. Never attach any frappe_docker volume or network.
+services:
+  db:
+    image: mariadb:11.8
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+    secrets:
+      - db_root_password
+    volumes:
+      - test_db:/var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:6.2-alpine
+  app:
+    image: frappe/erpnext:v16.35.0
+    command: [/home/frappe/frappe-bench/env/bin/python, /opt/meixin-test/bootstrap.py, serve]
+    working_dir: /home/frappe/frappe-bench
+    ports:
+      - 127.0.0.1:18081:18081
+      - 127.0.0.1:18082:18082
+    volumes:
+      - test_sites:/home/frappe/frappe-bench/sites
+      - ..:/home/frappe/frappe-bench/apps/meixin_admin
+      - ./test-bootstrap.py:/opt/meixin-test/bootstrap.py:ro
+    secrets:
+      - db_root_password
+      - admin_password
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+secrets:
+  db_root_password:
+    file: ${MEIXIN_TEST_SECRET_DIR:?Run test-env.ps1 first}/db-root-password
+  admin_password:
+    file: ${MEIXIN_TEST_SECRET_DIR:?Run test-env.ps1 first}/admin-password
+volumes:
+  test_db:
+  test_sites:

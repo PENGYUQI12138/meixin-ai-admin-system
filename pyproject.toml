@@ -1,0 +1,23 @@
+[build-system]
+requires = ["flit_core>=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "meixin_admin"
+authors = [{name = "Meixin"}]
+description = "美心 Frappe 行政系统 M1：档案与单节排课"
+requires-python = ">=3.14,<3.15"
+readme = "README_中文.md"
+license = {text = "MIT"}
+dynamic = ["version"]
+dependencies = []
+
+[tool.bench.frappe-dependencies]
+frappe = ">=16.34.0,<17.0.0"
+
+[tool.flit.sdist]
+include = ["meixin_admin", "docs", "deploy", "README_中文.md", "LICENSE"]
+
+[tool.ruff]
+line-length = 100
+

@@ -1,0 +1,13 @@
+.git
+__pycache__
+**/__pycache__
+*.pyc
+*.log
+.env*
+secrets
+sites
+backups
+dist
+build
+*.egg-info
+

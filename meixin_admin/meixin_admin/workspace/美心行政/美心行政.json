@@ -1,0 +1,82 @@
+{
+ "doctype": "Workspace",
+ "name": "美心行政",
+ "label": "美心行政",
+ "title": "美心行政",
+ "module": "Meixin Admin",
+ "app": "meixin_admin",
+ "public": 1,
+ "for_user": "",
+ "parent_page": "",
+ "type": "Workspace",
+ "icon": "education",
+ "indicator_color": "green",
+ "sequence_id": 1,
+ "is_hidden": 0,
+ "hide_custom": 0,
+ "content": "[{\"id\": \"mx_heading\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>美心行政</b></span>\", \"col\": 12}}, {\"id\": \"mx_intro\", \"type\": \"paragraph\", \"data\": {\"text\": \"先建立学生、教师、课程和教室档案，再新建单节排课。草稿不占用时段；提交后确认。\", \"col\": 12}}, {\"id\": \"mx_shortcut_0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"学生档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教师档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"课程档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教室档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"单节排课\", \"col\": 4}}, {\"id\": \"mx_shortcut_5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"周课表\", \"col\": 4}}, {\"id\": \"mx_shortcut_6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"机构设置\", \"col\": 4}}]",
+ "shortcuts": [
+  {
+   "type": "DocType",
+   "link_to": "MX Student",
+   "label": "学生档案",
+   "doc_view": "List",
+   "color": "#2563eb"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Teacher",
+   "label": "教师档案",
+   "doc_view": "List",
+   "color": "#2563eb"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Course",
+   "label": "课程档案",
+   "doc_view": "List",
+   "color": "#2563eb"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Room",
+   "label": "教室档案",
+   "doc_view": "List",
+   "color": "#2563eb"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Session",
+   "label": "单节排课",
+   "doc_view": "List",
+   "color": "#16a34a"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Session",
+   "label": "周课表",
+   "doc_view": "Calendar",
+   "color": "#16a34a"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Settings",
+   "label": "机构设置",
+   "doc_view": "List",
+   "color": "#64748b"
+  }
+ ],
+ "links": [],
+ "charts": [],
+ "number_cards": [],
+ "quick_lists": [],
+ "custom_blocks": [],
+ "roles": [
+  {
+   "role": "Meixin Manager"
+  },
+  {
+   "role": "Meixin Scheduler"
+  }
+ ]
+}
