@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sysconfig
 import time
 
 BENCH = Path("/home/frappe/frappe-bench")
@@ -66,8 +67,10 @@ def bootstrap():
 
 
 def install_python_package():
-    run("uv", "pip", "install", "--python", str(BENCH / "env/bin/python"),
-        "--no-deps", "--editable", str(BENCH / "apps/meixin_admin"))
+    # The source is bind-mounted and has no third-party dependencies. A path file
+    # keeps container recreation deterministic and avoids downloading build tools.
+    purelib = Path(sysconfig.get_paths()["purelib"])
+    (purelib / "meixin_admin.pth").write_text(str(BENCH / "apps/meixin_admin") + "\n")
 
 
 def install():

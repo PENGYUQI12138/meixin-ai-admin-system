@@ -24,9 +24,6 @@ services:
     image: frappe/erpnext:v16.35.0
     command: [/home/frappe/frappe-bench/env/bin/python, /opt/meixin-test/bootstrap.py, serve]
     working_dir: /home/frappe/frappe-bench
-    ports:
-      - 127.0.0.1:18081:18081
-      - 127.0.0.1:18082:18082
     volumes:
       - test_sites:/home/frappe/frappe-bench/sites
       - ..:/home/frappe/frappe-bench/apps/meixin_admin
@@ -38,6 +35,25 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_started
+  frontend:
+    image: frappe/erpnext:v16.35.0
+    command: [/bin/sh, /opt/meixin-test/nginx.sh]
+    environment:
+      BACKEND: app:18081
+      SOCKETIO: app:18082
+      FRAPPE_SITE_NAME_HEADER: test_meixin_m1.localhost
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+      PROXY_READ_TIMEOUT: 120
+      CLIENT_MAX_BODY_SIZE: 10m
+    ports:
+      - 127.0.0.1:18081:8080
+    volumes:
+      - ./test-nginx.sh:/opt/meixin-test/nginx.sh:ro
+    depends_on:
+      app:
         condition: service_started
 secrets:
   db_root_password:

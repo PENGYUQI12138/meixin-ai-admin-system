@@ -12,6 +12,7 @@
 | 数据库容器 | `meixin_m1_test-db-1` |
 | Redis 容器 | `meixin_m1_test-redis-1` |
 | Web / 测试容器 | `meixin_m1_test-app-1` |
+| Nginx 入口容器 | `meixin_m1_test-frontend-1` |
 | 数据库卷 | `meixin_m1_test_test_db` |
 | 站点文件卷 | `meixin_m1_test_test_sites` |
 | 网络 | `meixin_m1_test_default` |
@@ -20,9 +21,9 @@
 | 框架 | Frappe `16.34.0` |
 | 数据库版本 | MariaDB `11.8.9`（镜像 `mariadb:11.8`） |
 | Python | `3.14.7` |
-| App | `meixin_admin 0.1.0`，宿主机源码以 editable 形式安装 |
+| App | `meixin_admin 0.1.0`，宿主机源码通过 Python 路径文件加载 |
 | Web 入口 | <http://127.0.0.1:18081> |
-| 实时消息端口 | `127.0.0.1:18082` |
+| 实时消息 | 经同源入口 `/socket.io` 反向代理到隔离 App 容器 |
 | 测试时区 | `Asia/Chongqing`，与已检查的试点站点相同 |
 
 沿用本地已有的 `frappe/erpnext:v16.35.0` 镜像。该镜像包含 ERPNext 源码，但隔离站点只安装 Frappe 与美心 App；本轮业务没有 ERPNext DocType 依赖。日志使用镜像自动创建的独立卷。没有挂载、复制、覆盖或删除 `frappe_docker` 项目的数据库、站点文件卷、网络或配置，也没有导入真实数据。
@@ -67,7 +68,7 @@ bench --site test_meixin_m1.localhost execute meixin_admin.tests.run.run
 docker restart meixin_m1_test-app-1
 ```
 
-容器启动会重新安装当前源码的 editable Python 包；不需要修改框架源码或运行前端打包。Desk 表单、DocType JS、Calendar JS 与 Page JS 由 Frappe 原生机制加载。实时消息由同一隔离容器中的 Node 进程提供；它和开发服务器一起停止。这里没有为测试运行队列 worker 或 scheduler，M1 排课同步提交不依赖后台任务。
+容器启动会重新写入当前 bind mount 源码的 Python 路径文件，不访问外网下载构建依赖；不需要修改框架源码或运行前端打包。Desk 表单、DocType JS、Calendar JS 与 Page JS 由 Frappe 原生机制加载。实时消息由同一隔离 App 容器中的 Node 进程提供，Nginx 入口把同源 `/socket.io` 请求转发到该进程；两者随隔离环境一起停止。这里没有为测试运行队列 worker 或 scheduler，M1 排课同步提交不依赖后台任务。
 
 宿主机若配置了 HTTP 代理，可以这样绕过代理核验本地入口：
 
@@ -75,7 +76,7 @@ docker restart meixin_m1_test-app-1
 curl.exe --noproxy '*' -I http://127.0.0.1:18081/login
 ```
 
-已实测登录入口返回 HTTP 200，实时 Socket.IO 握手返回有效握手包。这是服务连通性验证，不能代替浏览器端到端验收。
+登录入口、实时 Socket.IO 握手与浏览器控制台结果应记录在 `M1_ACCEPTANCE.md`。服务连通性验证不能代替浏览器端到端验收。
 
 ## 实际测试记录
 
