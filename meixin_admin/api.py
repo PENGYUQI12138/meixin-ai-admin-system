@@ -1,5 +1,6 @@
 """Authenticated Desk endpoints. Frappe list and document permissions apply."""
 import frappe
+from frappe.permissions import has_permission as quiet_has_permission
 from frappe.utils import get_system_timezone
 
 from meixin_admin.permissions import require_member
@@ -55,7 +56,7 @@ def get_events(start, end, filters=None, doctype=None, fields=None, field_map=No
     result = []
     for row in rows:
         doc = frappe.get_doc("MX Session", row.name)
-        if not frappe.has_permission("MX Session", "read", doc=doc, print_logs=False):
+        if not quiet_has_permission("MX Session", "read", doc=doc, print_logs=False):
             continue
         result.append({
             "name": row.name, "title": f"{'确认' if row.docstatus == 1 else '草稿 · 不占用'}｜{row.title}",

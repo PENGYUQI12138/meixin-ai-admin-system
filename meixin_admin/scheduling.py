@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 import frappe
 from frappe.model.document import Document
+from frappe.permissions import has_permission as quiet_has_permission
 from frappe.utils import cint, get_datetime, now_datetime
 
 from meixin_admin.permissions import require_member
@@ -77,7 +78,9 @@ def current_master(doctype, name, *, check_permission=True):
     if not rows:
         frappe.throw("所选档案不存在，请重新选择。")
     row = rows[0]
-    if check_permission and not frappe.has_permission(doctype, "read", doc=frappe.get_doc(doctype, name), print_logs=False):
+    if check_permission and not quiet_has_permission(
+        doctype, "read", doc=frappe.get_doc(doctype, name), print_logs=False
+    ):
         frappe.throw("没有权限使用所选档案。", frappe.PermissionError)
     if not cint(row.enabled):
         frappe.throw(f"{escape(frappe._(doctype))}「{escape(row[MASTER_FIELDS[doctype]])}」已停用，请重新选择。")
@@ -135,12 +138,12 @@ def conflicts(doc):
 def conflict_message(old, resources):
     # Global detection is necessary; disclose details only with doc read access.
     old_doc = frappe.get_doc("MX Session", old.name)
-    if not frappe.has_permission("MX Session", "read", doc=old_doc, print_logs=False):
+    if not quiet_has_permission("MX Session", "read", doc=old_doc, print_logs=False):
         return "所选资源存在无权查看的已确认排课，请联系美心管理员协调。"
     parts = []
     for label, dt, name in resources:
         master = frappe.get_doc(dt, name)
-        if frappe.has_permission(dt, "read", doc=master, print_logs=False):
+        if quiet_has_permission(dt, "read", doc=master, print_logs=False):
             parts.append(f"{label}「{escape(master.get(MASTER_FIELDS[dt]))}」")
         else:
             parts.append(label)
