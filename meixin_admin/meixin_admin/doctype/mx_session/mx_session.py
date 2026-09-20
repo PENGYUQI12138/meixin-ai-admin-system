@@ -28,3 +28,7 @@ class MXSession(SchedulingDocument):
         changed = changed or [row.student for row in self.students] != [row.student for row in old.students]
         if changed:
             frappe.throw("取消时不能改动原排课内容。请重新加载原单并取消，再通过修订调整。")
+
+    def on_trash(self):
+        if self.docstatus != 0:
+            frappe.throw("已确认或已取消的排课必须保留，不能删除。")

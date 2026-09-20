@@ -1,17 +1,18 @@
 #!/bin/sh
 set -eu
 
-nginx-entrypoint.sh &
-nginx_pid=$!
-
-while [ ! -s /etc/nginx/conf.d/frappe.conf ]; do
-	sleep 0.1
-done
-
 # The stock fixed-site template rewrites Origin to the internal site name. Keep
 # the browser's public hostname so Frappe's realtime same-origin check succeeds.
-sed -i 's#proxy_set_header Origin .*;#proxy_set_header Origin $proxy_x_forwarded_proto://$http_host;#' \
-	/etc/nginx/conf.d/frappe.conf
-nginx -s reload
+envsubst '${BACKEND}
+  ${SOCKETIO}
+  ${UPSTREAM_REAL_IP_ADDRESS}
+  ${UPSTREAM_REAL_IP_HEADER}
+  ${UPSTREAM_REAL_IP_RECURSIVE}
+  ${FRAPPE_SITE_NAME_HEADER}
+  ${PROXY_READ_TIMEOUT}
+  ${CLIENT_MAX_BODY_SIZE}' \
+	< /templates/nginx/frappe.conf.template \
+	| sed 's#proxy_set_header Origin .*;#proxy_set_header Origin $proxy_x_forwarded_proto://$http_host;#' \
+	> /etc/nginx/conf.d/frappe.conf
 
-wait "$nginx_pid"
+exec nginx -g 'daemon off;'

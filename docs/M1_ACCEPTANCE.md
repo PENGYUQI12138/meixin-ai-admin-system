@@ -17,13 +17,13 @@
 最终实际结果：
 
 ```text
-Ran 27 tests in 14.085s
+Ran 27 tests in 13.350s
 
 OK
 {"site": "test_meixin_m1.localhost", "tests_run": 27, "failures": 0, "errors": 0, "skipped": 0}
 ```
 
-覆盖范围包括正常排课、三类资源冲突、相邻时段、无效时间、重复学生、超容量、禁用档案、跨午夜、取消释放、提交后禁改、修订重检、权限拒绝、日历过滤、并发提交、失败回滚、演示初始化幂等、档案停用和教室缩容保护。完整输出保存在 Git 忽略的 `docs/validation/isolated-integration-tests.log`。
+覆盖范围包括正常排课、三类资源冲突、相邻时段、无效时间、重复学生、超容量、禁用档案、跨午夜、取消释放并保留记录、提交后禁改、修订重检、权限拒绝、日历过滤、并发提交、失败回滚、演示初始化幂等、档案停用和教室缩容保护。完整输出保存在 Git 忽略的 `docs/validation/isolated-integration-tests.log`。
 
 ## 浏览器端到端验收
 

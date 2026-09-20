@@ -155,6 +155,8 @@ class TestM1(unittest.TestCase):
         self.session().submit()
         self.assertEqual(frappe.db.get_value("MX Session", first.name, "docstatus"), 2)
         self.assertEqual(frappe.db.count("MX Session", {"demo_batch": self.batch}), 2)
+        self.rejected(first.delete)
+        self.assertTrue(frappe.db.exists("MX Session", first.name))
 
     def test_12_submitted_fields_cannot_be_changed(self):
         doc = self.session().submit()

@@ -53,6 +53,14 @@ git log --oneline -5
 - 已去除隔离 App 容器重建时下载 Python 构建依赖的要求，源码通过路径文件加载，离线重启成功。
 - 关键界面截图已保留在当前 Codex 任务记录中；隔离运行数据和截图不提交 Git。
 
+### 阶段 5：最终复核（已完成）
+
+- 按功能范围、权限与隐私、事务与并发、Frappe 16/部署兼容、运维文档五个方向复核源码和实际结果。
+- 修复“取消后仍可删除历史排课”：已提交或已取消排课现在由服务器禁止删除，管理员仍可删除草稿；补充回归断言。
+- 将隔离 Nginx 入口改为启动前一次性生成配置，避免重启时读取旧配置的竞争；容器强制重建和二次重启均验证成功。
+- 增加 `.gitattributes`，确保 Windows Git 检出后测试入口 shell 脚本仍使用 LF。
+- 最终静态检查、Compose 配置校验、秘密扫描通过；完整 27 项再次通过；重启后的全新课表页控制台仍为 0 error、0 warn。
+
 ## 修改文件
 
 - App 元数据与钩子：`pyproject.toml`、`meixin_admin/hooks.py`、`modules.txt`、`patches.txt`。
@@ -60,6 +68,7 @@ git log --oneline -5
 - 模型与界面：`meixin_admin/meixin_admin/doctype/**`、`workspace/**`、`desktop_icon/**`、`workspace_sidebar/**`、`translations/zh.csv`。
 - 测试：`meixin_admin/tests/**`。
 - 部署与隔离环境：`deploy/**`。
+- Git 检出规则：`.gitattributes`（容器 shell 脚本固定 LF）。
 - 文档：`README_中文.md`、`docs/**`、`docs/M1_ACCEPTANCE.md`、本文件。
 
 ## 测试结果
@@ -72,22 +81,19 @@ git log --oneline -5
 - 集成测试首轮：26 项运行，23 项通过、1 项失败、2 项错误。问题已定位为 Single 类型测试假设和 MariaDB 11.8 并发快照错误；原始失败保留在 `isolated-integration-initial-failures.log`。
 - 上述问题及取消夹带修改、缺失时间、权限日志泄露风险已修复。
 - 2026-09-21 首次重跑最新 27 项时，Frappe 16 顶层 `frappe.has_permission` 不接受 `print_logs`，27 项均在同一入口报错；修为 `frappe.permissions.has_permission` 的版本兼容调用后再次完整运行，结果为 `Ran 27 tests in 10.790s / OK`。
-- 浏览器验收及测试入口修复后再次完整运行：`Ran 27 tests in 14.085s / OK`，0 失败、0 错误、0 跳过。
+- 最终复核修复后再次完整运行：`Ran 27 tests in 13.350s / OK`，0 失败、0 错误、0 跳过。
 - 浏览器已实际走通工作台→建档→排课→提交→冲突→周课表；全新最终课表页控制台 0 error、0 warn。
 - 目标 `frontend` 尚未安装 M1；因此现场安装与运行未验证。
 
 ## 未完成事项
 
-- 对最终变更执行五轴代码复核和秘密扫描。
 - 在切换试点应用容器前说明中断影响并等待用户最终确认；之后才可安装到 `frontend`。
 - 试点安装后再次跑迁移、角色/入口/API 冒烟与人工验收；不在试点站点运行测试套件。
 
 ## 下一步操作
 
-1. 对最终变更执行五轴代码复核、静态检查和秘密扫描；修复确认的问题。
-2. 更新本文件并提交界面验收阶段 Git commit。
-3. 汇总可审阅的试点安装步骤和中断影响，向用户请求切换应用容器的最终确认。
-4. 获得确认后安装到 `frontend`，只做迁移、权限/入口/API 冒烟与人工验收，不运行测试套件。
+1. 汇总可审阅的试点安装步骤和中断影响，向用户请求切换应用容器的最终确认。
+2. 获得确认后安装到 `frontend`，只做迁移、权限/入口/API 冒烟与人工验收，不运行测试套件。
 
 ## 明确停止范围
 
