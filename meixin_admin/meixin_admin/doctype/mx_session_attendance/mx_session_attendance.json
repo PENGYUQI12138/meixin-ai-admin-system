@@ -1,0 +1,59 @@
+{
+ "doctype": "DocType",
+ "name": "MX Session Attendance",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "student",
+  "attendance_status",
+  "notes",
+  "consumption_rule_result"
+ ],
+ "fields": [
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "学生",
+   "options": "MX Student",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "attendance_status",
+   "fieldtype": "Select",
+   "label": "考勤状态",
+   "options": "\n到课\n请假\n缺勤\n其他",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "说明",
+   "in_list_view": 1,
+   "columns": 4
+  },
+  {
+   "fieldname": "consumption_rule_result",
+   "fieldtype": "Select",
+   "label": "冻结课消结果",
+   "options": "\n课消\n不课消",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 2
+  }
+ ],
+ "permissions": [],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "istable": 1,
+ "editable_grid": 1
+}

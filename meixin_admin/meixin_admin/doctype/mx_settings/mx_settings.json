@@ -6,7 +6,14 @@
  "custom": 0,
  "field_order": [
   "institution_name",
-  "site_time_zone"
+  "site_time_zone",
+  "consumption_rules_section",
+  "consumption_rules_notice",
+  "present_rule",
+  "leave_rule",
+  "absent_rule",
+  "other_rule",
+  "session_cancel_rule"
  ],
  "fields": [
   {
@@ -20,6 +27,57 @@
    "fieldname": "site_time_zone",
    "fieldtype": "HTML",
    "label": "实际站点时区"
+  },
+  {
+   "fieldname": "consumption_rules_section",
+   "fieldtype": "Section Break",
+   "label": "课消规则"
+  },
+  {
+   "fieldname": "consumption_rules_notice",
+   "fieldtype": "HTML",
+   "label": "规则说明",
+   "options": "<div class=\"alert alert-warning\">每项规则必须由美心管理员明确选择。未配置时，涉及该状态的执行提交或课程取消会被拒绝。</div>"
+  },
+  {
+   "fieldname": "present_rule",
+   "fieldtype": "Select",
+   "label": "到课",
+   "options": "未配置\n课消\n不课消",
+   "default": "未配置",
+   "reqd": 1
+  },
+  {
+   "fieldname": "leave_rule",
+   "fieldtype": "Select",
+   "label": "请假",
+   "options": "未配置\n课消\n不课消",
+   "default": "未配置",
+   "reqd": 1
+  },
+  {
+   "fieldname": "absent_rule",
+   "fieldtype": "Select",
+   "label": "缺勤",
+   "options": "未配置\n课消\n不课消",
+   "default": "未配置",
+   "reqd": 1
+  },
+  {
+   "fieldname": "other_rule",
+   "fieldtype": "Select",
+   "label": "其他",
+   "options": "未配置\n课消\n不课消",
+   "default": "未配置",
+   "reqd": 1
+  },
+  {
+   "fieldname": "session_cancel_rule",
+   "fieldtype": "Select",
+   "label": "课程取消",
+   "options": "未配置\n课消\n不课消",
+   "default": "未配置",
+   "reqd": 1
   }
  ],
  "permissions": [

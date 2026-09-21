@@ -13,7 +13,8 @@ after_migrate = "meixin_admin.install.after_migrate"
 
 fixtures = [{"dt": "Role", "filters": [["name", "in", ["Meixin Manager", "Meixin Scheduler"]]]}]
 
-_doctypes = ["MX Student", "MX Teacher", "MX Course", "MX Room", "MX Session", "MX Settings"]
+_doctypes = ["MX Student", "MX Teacher", "MX Course", "MX Room", "MX Session",
+             "MX Session Execution", "MX Lesson Consumption Entry", "MX Settings"]
 has_permission = {dt: "meixin_admin.permissions.has_permission" for dt in _doctypes}
 permission_query_conditions = {dt: "meixin_admin.permissions.query_conditions" for dt in _doctypes}
 doc_events = {"DocShare": {"validate": "meixin_admin.permissions.prevent_mx_share"}}

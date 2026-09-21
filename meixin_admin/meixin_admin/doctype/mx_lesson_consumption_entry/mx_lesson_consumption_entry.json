@@ -1,0 +1,199 @@
+{
+ "doctype": "DocType",
+ "name": "MX Lesson Consumption Entry",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "student",
+  "student_name_snapshot",
+  "session",
+  "execution",
+  "course",
+  "course_name_snapshot",
+  "scheduled_start",
+  "scheduled_end",
+  "outcome",
+  "rule_result",
+  "operation_type",
+  "effect",
+  "reversal_of",
+  "reason",
+  "idempotency_key",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "学生",
+   "options": "MX Student",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "student_name_snapshot",
+   "fieldtype": "Data",
+   "label": "学生姓名快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "session",
+   "fieldtype": "Link",
+   "label": "原排课",
+   "options": "MX Session",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "execution",
+   "fieldtype": "Link",
+   "label": "执行单",
+   "options": "MX Session Execution",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "课程",
+   "options": "MX Course",
+   "reqd": 1,
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "course_name_snapshot",
+   "fieldtype": "Data",
+   "label": "课程名称快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "scheduled_start",
+   "fieldtype": "Datetime",
+   "label": "计划开始时间",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "scheduled_end",
+   "fieldtype": "Datetime",
+   "label": "计划结束时间",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "outcome",
+   "fieldtype": "Select",
+   "label": "业务结果",
+   "options": "到课\n请假\n缺勤\n其他\n课程取消",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "rule_result",
+   "fieldtype": "Select",
+   "label": "采用规则",
+   "options": "课消\n不课消",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "operation_type",
+   "fieldtype": "Select",
+   "label": "操作类型",
+   "options": "决定\n撤销",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "effect",
+   "fieldtype": "Int",
+   "label": "课消效果",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Link",
+   "label": "撤销原流水",
+   "options": "MX Lesson Consumption Entry",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "幂等键",
+   "reqd": 1,
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "autoname": "MX-LCE-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "student_name_snapshot",
+ "search_fields": "student_name_snapshot,session,execution",
+ "show_title_field_in_link": 1
+}

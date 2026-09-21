@@ -24,6 +24,15 @@ git log --oneline -5
 - 设计采用五项三态课消规则、不可变且数据库幂等的 `+1/0/-1` 流水、Manager 专属纠错、Scheduler 正常时间提交、Manager 有原因提前完成。
 - 完整设计见 `docs/M2_DESIGN.md`。本阶段没有迁移数据库、修改容器或触碰正式站点业务数据。
 
+### 阶段 2：M2 Schema、规则字段与权限（已完成）
+
+- 新增可提交 `MX Session Execution`、子表 `MX Session Attendance`、只读 `MX Lesson Consumption Entry` 三个 DocType。
+- `MX Settings` 新增到课、请假、缺勤、其他、课程取消五项三态规则，默认均为“未配置”。
+- Manager 可提交/取消/修订执行单；Scheduler 可创建、保存和提交，但无取消、修订或删除权限；两者对课消流水仅有读取/报表权限。
+- `idempotency_key` 已通过 DocType `unique` 在 MariaDB 建立唯一 BTREE；新增执行、考勤和流水查询索引。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过。
+- 仅在隔离站 `test_meixin_m1.localhost` 执行 migrate，成功同步三个 DocType、五项规则、权限、唯一约束和索引；正式 `frontend` 未迁移、未重建、未写入。
+
 ## 已完成内容
 
 ### 阶段 1：现场核查与修改前备份（已确认）

@@ -1,0 +1,127 @@
+{
+ "doctype": "DocType",
+ "name": "MX Session Execution",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "execution_notice",
+  "session",
+  "attendance",
+  "early_completion_reason",
+  "completed_at",
+  "completed_by",
+  "amended_from",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "execution_notice",
+   "fieldtype": "HTML",
+   "label": "执行说明",
+   "options": "<div class=\"alert alert-info\">草稿仅记录考勤；提交执行单才冻结结果并生成课消决策流水。</div>"
+  },
+  {
+   "fieldname": "session",
+   "fieldtype": "Link",
+   "label": "原排课",
+   "options": "MX Session",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Table",
+   "label": "学生考勤",
+   "options": "MX Session Attendance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "early_completion_reason",
+   "fieldtype": "Small Text",
+   "label": "提前完成原因",
+   "description": "仅美心管理员在计划结束时间前确认完成时填写。"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "完成确认时间",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "completed_by",
+   "fieldtype": "Link",
+   "label": "完成人",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "修订来源",
+   "options": "MX Session Execution",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅隔离测试填写；真实记录留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "autoname": "MX-EXE-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "session",
+ "search_fields": "session",
+ "show_title_field_in_link": 1,
+ "is_submittable": 1
+}
