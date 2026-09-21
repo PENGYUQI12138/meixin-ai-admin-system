@@ -212,6 +212,7 @@ class TestM2(unittest.TestCase):
         session = self.session()
         self.set_rules(session_cancel_rule="未配置")
         self.assertIn("尚未配置", self.rejected(session.cancel))
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"session": session.name}), 0)
         session.reload()
         self.set_rules(session_cancel_rule="不课消")
         session.cancel()
@@ -385,6 +386,75 @@ class TestM2(unittest.TestCase):
         existing = execution_api.make_execution(session.name)
         self.assertEqual(existing.name, draft.name)
         self.assertFalse(existing.get("__islocal"))
+
+    def test_19_execution_cancel_reuses_prior_manual_reversal(self):
+        self.set_rules(present_rule="课消")
+        execution = self.execution(self.session()).submit()
+        decision = frappe.db.get_value(
+            "MX Lesson Consumption Entry", {"execution": execution.name, "operation_type": "决定"}, "name"
+        )
+        manual = consumption.manual_reverse(decision, "先行纠正单名学生课消")
+        execution.reload().cancel()
+        reversals = frappe.get_all(
+            "MX Lesson Consumption Entry", filters={"reversal_of": decision}, pluck="name",
+        )
+        self.assertEqual(reversals, [manual])
+        self.assertEqual(frappe.db.get_value("MX Session Execution", execution.name, "docstatus"), 2)
+
+    def test_20_scheduler_cannot_change_rules_cancel_or_reverse(self):
+        execution = self.execution(self.session(start=now_datetime() - timedelta(hours=2))).submit()
+        decision = frappe.db.get_value(
+            "MX Lesson Consumption Entry", {"execution": execution.name, "operation_type": "决定"}, "name"
+        )
+        scheduler = self.user("Meixin Scheduler")
+        frappe.set_user(scheduler)
+        settings = frappe.get_single("MX Settings")
+        settings.present_rule = "课消"
+        self.rejected(settings.save, frappe.PermissionError)
+        self.rejected(lambda: frappe.get_doc("MX Session Execution", execution.name).cancel(), frappe.PermissionError)
+        self.rejected(lambda: consumption.manual_reverse(decision, "越权撤销"), frappe.PermissionError)
+
+    def test_21_idempotency_key_returns_same_entry_and_rejects_different_content(self):
+        session = self.session()
+        key = "test-idempotency:" + uuid.uuid4().hex
+        values = consumption._entry_values(
+            session, self.students[0].name, "到课", "不课消", "决定", 0, key,
+        )
+        with consumption.ledger_write():
+            first = consumption.insert_idempotent(values)
+        self.assertEqual(consumption.insert_idempotent(values).name, first.name)
+        conflicting = dict(values, reason="不同内容")
+        self.assertIn("不同的课消内容", self.rejected(lambda: consumption.insert_idempotent(conflicting)))
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"idempotency_key": key}), 1)
+
+    def test_22_new_doctypes_and_apis_respect_role_and_user_permissions(self):
+        from frappe.client import get, get_list
+
+        execution = self.execution(self.session()).submit()
+        entry = frappe.db.get_value("MX Lesson Consumption Entry", {"execution": execution.name}, "name")
+        outsider = self.user("System Manager")
+        for user in ("Guest", outsider):
+            frappe.set_user(user)
+            for doctype, name in (
+                ("MX Session Execution", execution.name),
+                ("MX Lesson Consumption Entry", entry),
+            ):
+                self.rejected(lambda dt=doctype, dn=name: get(dt, dn), frappe.PermissionError)
+                self.rejected(lambda dt=doctype: get_list(dt), frappe.PermissionError)
+            self.rejected(lambda: execution_api.get_session_execution_status(execution.session), frappe.PermissionError)
+            self.rejected(lambda: execution_api.make_execution(execution.session), frappe.PermissionError)
+
+        frappe.set_user("Administrator")
+        allowed_room = self.master("MX Room", room_name="M2虚构可见教室", capacity=8)
+        scheduler = self.user("Meixin Scheduler")
+        frappe.get_doc({
+            "doctype": "User Permission", "user": scheduler, "allow": "MX Room",
+            "for_value": allowed_room.name, "apply_to_all_doctypes": 1,
+        }).insert(ignore_permissions=True)
+        frappe.set_user(scheduler)
+        self.assertFalse(frappe.has_permission("MX Session", "read", doc=frappe.get_doc("MX Session", execution.session)))
+        self.rejected(lambda: execution_api.get_session_execution_status(execution.session), frappe.PermissionError)
+        self.rejected(lambda: execution_api.make_execution(execution.session), frappe.PermissionError)
 
 
 if __name__ == "__main__":

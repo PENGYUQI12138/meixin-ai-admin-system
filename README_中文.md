@@ -1,6 +1,6 @@
-# 美心 Frappe 行政系统 M1
+# 美心 Frappe 行政系统 M1 / M2
 
-独立 App `meixin_admin`，模块 `Meixin Admin`。使用现有 Frappe Desk，不修改 Frappe/ERPNext 核心。范围仅包括中文工作台、学生/教师/课程/教室档案、单节排课、周课表、权限、演示与测试。
+独立 App `meixin_admin`，模块 `Meixin Admin`。使用现有 Frappe Desk，不修改 Frappe/ERPNext 核心。M1 提供档案、排课和周课表；M2 在冻结排课之上增加执行单、学生考勤和不可变课消决策流水。
 
 适配现场：Frappe **16.34.0**、ERPNext **16.35.0**、Python **3.14.7**、MariaDB **11.8.9**，镜像 `frappe/erpnext:v16.35.0`。不执行框架升级。
 
@@ -9,6 +9,7 @@
 - 环境、备份与本轮部署记录：[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)。
 - 并发、权限与后续数据边界：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 - 实际测试与点击验收：[docs/M1_ACCEPTANCE.md](docs/M1_ACCEPTANCE.md)。
+- M2 设计与当前验收：[docs/M2_DESIGN.md](docs/M2_DESIGN.md)、[docs/M2_ACCEPTANCE.md](docs/M2_ACCEPTANCE.md)。
 - 下一步及停止范围：[docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)。
 - 隔离测试环境：[docs/TEST_ENVIRONMENT.md](docs/TEST_ENVIRONMENT.md)。
 
@@ -21,6 +22,14 @@
 5. 工作台进入「周课表」；可切换日期并筛选教师、教室。草稿和确认颜色不同，取消记录不显示在有效课表。周/日时间网格默认定位上午营业时段，仍可上下滚动查看全天。
 6. 已确认排课不能直接更改。美心管理员可「取消」，之后「修订」成新草稿，再提交；取消的原记录保留。
 7. 「美心设置」仅管理员维护机构名称，显示实际站点时区。本轮保持原 `Asia/Chongqing`。迁移时 Administrator 和已分配美心业务角色的用户会按 Frappe 正常用户设置对齐站点时区；表单、日历与冲突提示因此显示同一中国本地时间，不使用固定小时偏移。
+
+## M2 上课执行与课消流水
+
+1. Manager 先在「机构设置」分别配置到课、请假、缺勤、其他和课程取消的课消规则。任何涉及的规则仍为“未配置”时，提交或取消都会被服务器拒绝。
+2. 从已确认排课点击「记录上课结果」，逐名填写考勤后提交。Scheduler 只能在计划结束后提交；Manager 提前提交必须填写原因。
+3. 提交会冻结当时采用的规则，并为每名学生保留 `+1` 或 `0` 流水；`0` 表示明确不课消，不等同于尚未处理。
+4. 只有 Manager 可以取消或修订执行单、人工撤销 `+1`。纠错只追加 `-1` 或带来源的 `0` reversal，永不覆盖旧流水。
+5. M2 流水不代表课包余额；本里程碑不实现充值、收费、剩余课时或余额扣减。
 
 ## 安装和迁移原则
 
@@ -71,6 +80,6 @@ bench --site test_meixin_m1.localhost execute meixin_admin.tests.run.run
 
 备份文件在 Git 外。恢复会覆盖目标数据库，必须再次确认具体站点和备份，不能把失败时自动恢复当作安全操作。详见环境文档。任何数据库恢复都要匹配同一批次的文件和配置；已有数据的升级失败优先修复前进，禁止卸载 App 来“清理”错误。
 
-## M1 停止范围
+## M2 停止范围
 
-未实现收费、报名、考勤课消、教师工资、微信、校精灵对接、支付或 AI 排课；不创建这些业务的空界面。M1 完成后停止。
+未实现收费、报名、课包余额、教师工资、财务、微信、校精灵对接、支付、家长端、大型经营报表或 AI 排课；不创建这些业务的空界面。

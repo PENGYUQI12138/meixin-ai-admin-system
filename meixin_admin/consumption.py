@@ -121,14 +121,18 @@ def reverse_execution(execution):
     )
     if len(rows) != len(execution.attendance):
         frappe.throw("执行单的课消流水不完整，已停止撤销；请联系管理员检查。")
-    return [
-        create_reversal(
+    reversals = []
+    for row in rows:
+        existing = frappe.db.get_value(ENTRY_DOCTYPE, {"reversal_of": row.name}, "name")
+        if existing:
+            reversals.append(frappe.get_doc(ENTRY_DOCTYPE, existing))
+            continue
+        reversals.append(create_reversal(
             frappe.get_doc(ENTRY_DOCTYPE, row.name),
             key_prefix="execution-reversal",
             reason=f"撤销执行单 {execution.name}",
-        )
-        for row in rows
-    ]
+        ))
+    return reversals
 
 
 def create_session_cancel_decisions(session):
