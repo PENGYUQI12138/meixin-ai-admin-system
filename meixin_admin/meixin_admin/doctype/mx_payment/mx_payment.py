@@ -55,6 +55,11 @@ class MXPayment(SchedulingDocument):
     def before_update_after_submit(self):
         frappe.throw("已提交付款不可修改；纠错只能追加撤销流水。")
 
+    def before_submit(self):
+        from meixin_admin.payments import finalize_receipt
+
+        finalize_receipt(self)
+
     def before_cancel(self):
         frappe.throw("付款不能直接取消；纠错只能追加撤销流水。")
 

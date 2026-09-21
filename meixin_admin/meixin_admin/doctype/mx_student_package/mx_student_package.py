@@ -45,6 +45,13 @@ class MXStudentPackage(SchedulingDocument):
         if self.expires_on and getdate(self.expires_on) < getdate(self.effective_from):
             frappe.throw("失效日期不能早于生效日期。")
 
+    def before_submit(self):
+        if self.acquisition_type == "赠送":
+            require_manager()
+            from meixin_admin.entitlements import grant_package
+
+            grant_package(self)
+
     def before_cancel(self):
         require_manager()
         if frappe.db.exists("MX Payment", {"student_package": self.name}):

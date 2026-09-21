@@ -21,11 +21,11 @@ def main():
         doctype = {
             "submit": "MX Session", "teacher": "MX Teacher", "room": "MX Room",
             "execution_submit": "MX Session Execution", "session_cancel": "MX Session",
-            "settings": "MX Settings",
+            "settings": "MX Settings", "payment_submit": "MX Payment",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
-            not doc.demo_batch or not doc.demo_batch.startswith(("TEST-M1-", "TEST-M2-"))
+            not doc.demo_batch or not doc.demo_batch.startswith(("TEST-M1-", "TEST-M2-", "TEST-M3-"))
         ):
             raise RuntimeError("并发进程拒绝修改非本测试标记数据。")
         if config["hold"]:
@@ -35,7 +35,7 @@ def main():
             raise RuntimeError("并发测试缺少执行信号。")
         print("ATTEMPT", flush=True)
         try:
-            if config["operation"] in {"submit", "execution_submit"}:
+            if config["operation"] in {"submit", "execution_submit", "payment_submit"}:
                 doc.submit()
             elif config["operation"] == "session_cancel":
                 doc.cancel()

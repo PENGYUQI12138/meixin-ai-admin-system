@@ -37,6 +37,16 @@ git log --oneline -5
 - 隔离 MariaDB 已实际核对全部唯一索引和四个 DocType 的 DocPerm，不只依赖源码声明。
 - 新增 4 项 M3 schema 骨架测试，覆盖产品/购买快照、系统 request ID、Scheduler 越权拒绝、服务器现金效果和 Credit Entry 直接写入拒绝。完整结果为 `Ran 56 tests in 15.535s / OK`：M1 30/30、M2 22/22、M3 4/4。
 
+### 阶段 4A：Student Package、普通付款与满款激活（已完成）
+
+- 购买型 Student Package 提交后不授予权益；普通收款支持一次付清和分次付款，锁内按 Decimal 重新汇总已提交 `cash_effect`，拒绝超额和负净付款。
+- 净收款第一次恰好达到成交金额时，通过唯一 `package-grant:<student-package>` 幂等键生成完整 `+N` Credit Entry，并只写一次 `activated_at`；分次付款、双击和 API 重试不会重复 grant。
+- 赠送包继续只允许 Manager，提交时在同一事务直接生成唯一权益；阶段 4D 尚未实现的付款撤销和退款关闭在 `before_submit` 明确拒绝，避免提前暴露不完整资金流程。
+- 新增受权限保护的 `record_payment` 幂等 API；相同 request ID 和相同内容返回/完成原 Payment，不同内容拒绝。Student Package、Payment、Credit Entry 均继续复用现有 `schedule_write`，没有手动 commit 或新锁服务。
+- 首次并发测试发现锁后普通 SUM 仍读取 MariaDB REPEATABLE READ 旧快照，导致两笔付款完成但未 grant。汇总已改为 locking/current read；随后确认等待前已读取草稿的第二个标准 Document 请求会按 M1/M2 既有策略整体回滚并提示 fresh retry，重试后两笔付款完整、grant 仅一条。
+- 新增 7 项 4A 测试，覆盖待付款、Scheduler 一次付清、分次付款、超额拒绝、API/double-click 幂等、赠送包和并发付款安全重试。最终完整结果为 `Ran 63 tests in 16.932s / OK`：M1 30/30、M2 22/22、M3 11/11。
+- 测试后隔离站 `TEST-M3-%` 的 Package Plan、Student Package、Payment、Credit Entry、Student 和 Course 均为 0。Python 编译和 `git diff --check` 通过；正式 `frontend` 未 migrate、未重建、未写入。
+
 ## M2 当前状态
 
 ### 阶段 1：设计与分支基线（已完成）
@@ -251,9 +261,9 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 创建并推送阶段 3 schema checkpoint，确认分支工作区干净。
-2. 进入阶段 4：实现满款激活、付款/退款关闭/reversal、不可变课时权益流水、FEFO/FIFO 选择和 M2 窄事务联动。
-3. 扩充 M3 功能、失败回滚、权限和并发测试；所有写入仍只在隔离站执行。
+1. 创建阶段 4A 独立 checkpoint，确认工作区干净；按阶段 4 规则暂不 push。
+2. 进入阶段 4B：只在 M2 `consumption.py` 增加最窄必要集成，实现 `+1` 扣权益、`0` 不动作、`-1` 返还及整体失败回滚。
+3. 阶段 4B 完成后继续完整 M1/M2/M3 回归并建立独立 checkpoint；所有写入仍只在隔离站执行。
 
 ## 明确停止范围
 
