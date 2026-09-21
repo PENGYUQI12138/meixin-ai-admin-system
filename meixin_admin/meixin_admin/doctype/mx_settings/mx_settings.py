@@ -1,8 +1,7 @@
-from frappe.model.document import Document
-
 from meixin_admin.permissions import require_manager
+from meixin_admin.scheduling import SchedulingDocument
 
 
-class MXSettings(Document):
+class MXSettings(SchedulingDocument):
     def validate(self):
         require_manager()

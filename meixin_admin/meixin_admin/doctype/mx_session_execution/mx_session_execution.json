@@ -41,6 +41,7 @@
    "fieldname": "early_completion_reason",
    "fieldtype": "Small Text",
    "label": "提前完成原因",
+   "no_copy": 1,
    "description": "仅美心管理员在计划结束时间前确认完成时填写。"
   },
   {

@@ -34,6 +34,9 @@ class MXSession(SchedulingDocument):
         changed = changed or [row.student for row in self.students] != [row.student for row in old.students]
         if changed:
             frappe.throw("取消时不能改动原排课内容。请重新加载原单并取消，再通过修订调整。")
+        from meixin_admin.execution import validate_session_cancel
+
+        validate_session_cancel(self)
 
     def on_trash(self):
         if self.docstatus != 0:

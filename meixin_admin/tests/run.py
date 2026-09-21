@@ -29,10 +29,13 @@ def run():
     try:
         frappe.flags.in_test = True
         frappe.set_user("Administrator")
-        suite = unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m1")
+        suite = unittest.TestSuite([
+            unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m1"),
+            unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m2"),
+        ])
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         if not result.wasSuccessful():
-            raise RuntimeError(f"M1 集成验收失败：失败 {len(result.failures)}，错误 {len(result.errors)}。")
+            raise RuntimeError(f"美心集成验收失败：失败 {len(result.failures)}，错误 {len(result.errors)}。")
         return {"site": TEST_SITE, "tests_run": result.testsRun, "failures": 0, "errors": 0, "skipped": len(result.skipped)}
     finally:
         frappe.db.rollback()

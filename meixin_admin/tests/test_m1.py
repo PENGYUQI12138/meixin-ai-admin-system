@@ -28,6 +28,10 @@ class TestM1(unittest.TestCase):
         self.start = now_datetime().replace(hour=9, minute=0, second=0, microsecond=0) + timedelta(days=30)
         self.committed = False
         self.workers = []
+        settings = frappe.get_single("MX Settings")
+        for field in ("present_rule", "leave_rule", "absent_rule", "other_rule", "session_cancel_rule"):
+            settings.set(field, "不课消")
+        settings.save()
         self.students = [self.master("MX Student", student_name=f"虚构测试学生{i}") for i in range(6)]
         self.teachers = [self.master("MX Teacher", teacher_name=f"虚构测试教师{i}") for i in range(2)]
         self.courses = [self.master("MX Course", course_name=f"虚构测试课程{i}", default_duration_minutes=60) for i in range(2)]
