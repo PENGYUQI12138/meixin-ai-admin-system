@@ -14,8 +14,22 @@
  "sequence_id": 1,
  "is_hidden": 0,
  "hide_custom": 0,
- "content": "[{\"id\": \"mx_heading\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>美心行政</b></span>\", \"col\": 12}}, {\"id\": \"mx_intro\", \"type\": \"paragraph\", \"data\": {\"text\": \"先建立学生、教师、课程和教室档案，再新建单节排课。草稿不占用时段；提交后确认。\", \"col\": 12}}, {\"id\": \"mx_shortcut_0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"学生档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教师档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"课程档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教室档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"单节排课\", \"col\": 4}}, {\"id\": \"mx_shortcut_5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"周课表\", \"col\": 4}}, {\"id\": \"mx_shortcut_6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"机构设置\", \"col\": 4}}]",
+ "content": "[{\"id\": \"mx_heading\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>美心行政</b></span>\", \"col\": 12}}, {\"id\": \"mx_intro\", \"type\": \"paragraph\", \"data\": {\"text\": \"先确认排课，再由上课执行单记录考勤并生成不可变课消决策流水。\", \"col\": 12}}, {\"id\": \"mx_shortcut_0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"学生档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教师档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"课程档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教室档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"单节排课\", \"col\": 4}}, {\"id\": \"mx_shortcut_5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"周课表\", \"col\": 4}}, {\"id\": \"mx_shortcut_6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"上课执行\", \"col\": 4}}, {\"id\": \"mx_shortcut_7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"课消流水\", \"col\": 4}}, {\"id\": \"mx_shortcut_8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"机构设置\", \"col\": 4}}]",
  "shortcuts": [
+  {
+   "type": "DocType",
+   "link_to": "MX Session Execution",
+   "label": "上课执行",
+   "doc_view": "List",
+   "color": "#7c3aed"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Lesson Consumption Entry",
+   "label": "课消流水",
+   "doc_view": "List",
+   "color": "#b45309"
+  },
   {
    "type": "DocType",
    "link_to": "MX Student",

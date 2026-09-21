@@ -23,7 +23,7 @@ def locked_session(name):
     return session
 
 
-def validate_roster(execution, session):
+def validate_roster(execution, session, *, require_status=False):
     expected = [row.student for row in session.students]
     actual = [row.student for row in execution.attendance]
     if len(actual) != len(set(actual)):
@@ -31,9 +31,11 @@ def validate_roster(execution, session):
     if len(actual) != len(expected) or set(actual) != set(expected):
         frappe.throw("执行单学生名单必须与原排课完全一致，不能增删或替换。")
     for row in execution.attendance:
+        if not row.attendance_status and not require_status:
+            continue
         if row.attendance_status not in ATTENDANCE_STATUSES:
             frappe.throw("每名学生必须选择到课、请假、缺勤或其他。")
-        if row.attendance_status == "其他" and not (row.notes or "").strip():
+        if require_status and row.attendance_status == "其他" and not (row.notes or "").strip():
             frappe.throw("考勤状态为“其他”时必须填写说明。")
 
 
@@ -64,6 +66,7 @@ def validate_execution(execution):
 
 def finalize_execution(execution):
     session = validate_execution(execution)
+    validate_roster(execution, session, require_status=True)
     active = frappe.db.sql(
         """SELECT name FROM `tabMX Session Execution`
            WHERE session=%s AND docstatus=1 AND name!=%s FOR UPDATE""",
@@ -137,7 +140,9 @@ def make_execution(session):
         doc.demo_batch = source.demo_batch
         for row in source.students:
             doc.append("attendance", {"student": row.student})
-        return doc.as_dict()
+        payload = doc.as_dict()
+        payload["__islocal"] = 1  # frappe.model.sync assigns a browser-local name when this is set.
+        return payload
 
 
 @frappe.whitelist()

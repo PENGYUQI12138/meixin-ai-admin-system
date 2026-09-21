@@ -48,6 +48,24 @@ frappe.ui.form.on("MX Session", {
 		];
 		frm.set_intro(messages[frm.doc.docstatus], frm.doc.docstatus === 1 ? "green" : "blue");
 		frm.add_custom_button("周课表", () => frappe.set_route("List", "MX Session", "Calendar", "default"));
+		if (!frm.is_new() && frm.doc.docstatus === 1) {
+			const status_result = await frappe.call("meixin_admin.execution.get_session_execution_status", {
+				session: frm.doc.name,
+			});
+			const execution_status = status_result.message || { status: "待上课" };
+			frm.dashboard.set_headline_alert(`实际执行状态：${frappe.utils.escape_html(execution_status.status)}`);
+			frm.add_custom_button(execution_status.execution ? "查看执行单" : "记录上课结果", async () => {
+				if (execution_status.execution) {
+					frappe.set_route("Form", "MX Session Execution", execution_status.execution);
+					return;
+				}
+				const result = await frappe.call("meixin_admin.execution.make_execution", {
+					session: frm.doc.name,
+				});
+				const docs = frappe.model.sync(result.message);
+				frappe.set_route("Form", "MX Session Execution", docs[0].name);
+			});
+		}
 		const result = await frappe.call("meixin_admin.api.get_context");
 		const context = result.message;
 		if (!context) return;

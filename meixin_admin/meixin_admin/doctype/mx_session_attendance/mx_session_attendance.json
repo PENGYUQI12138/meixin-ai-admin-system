@@ -25,7 +25,6 @@
    "fieldtype": "Select",
    "label": "考勤状态",
    "options": "\n到课\n请假\n缺勤\n其他",
-   "reqd": 1,
    "in_list_view": 1,
    "columns": 2
   },

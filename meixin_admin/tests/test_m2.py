@@ -14,7 +14,7 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import now_datetime
 
-from meixin_admin import consumption
+from meixin_admin import consumption, execution as execution_api
 from meixin_admin.tests.run import assert_isolated_site
 
 RULE_FIELDS = ("present_rule", "leave_rule", "absent_rule", "other_rule", "session_cancel_rule")
@@ -163,7 +163,8 @@ class TestM2(unittest.TestCase):
         self.assertIn("完全一致", self.rejected(missing.save))
         other = self.execution(session, ["到课", "其他"])
         other.attendance[1].notes = ""
-        self.assertIn("必须填写说明", self.rejected(other.save))
+        other.save()
+        self.assertIn("必须填写说明", self.rejected(other.submit))
 
     def test_06_only_one_active_execution_and_decisions_are_idempotent(self):
         session = self.session()
@@ -372,6 +373,18 @@ class TestM2(unittest.TestCase):
         )[0]
         self.assertEqual((entry.rule_result, entry.effect), ("课消", 1))
         self.assertEqual(frappe.db.get_single_value("MX Settings", "present_rule"), "不课消")
+
+    def test_18_execution_form_api_populates_roster_and_returns_existing_draft(self):
+        session = self.session(students=self.students[:2])
+        payload = execution_api.make_execution(session.name)
+        self.assertTrue(payload.get("__islocal"))
+        self.assertEqual([row.student for row in payload.attendance], [s.name for s in self.students[:2]])
+        draft = frappe.get_doc(payload).insert()
+        status = execution_api.get_session_execution_status(session.name)
+        self.assertEqual(status, {"status": "待上课", "execution": draft.name})
+        existing = execution_api.make_execution(session.name)
+        self.assertEqual(existing.name, draft.name)
+        self.assertFalse(existing.get("__islocal"))
 
 
 if __name__ == "__main__":
