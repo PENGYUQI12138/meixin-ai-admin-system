@@ -1,8 +1,10 @@
 """M3 lesson-credit ledger primitives shared by package and M2 services."""
 from contextlib import contextmanager
+from datetime import date
+from decimal import Decimal
 
 import frappe
-from frappe.utils import cint, getdate, now_datetime
+from frappe.utils import cint, get_datetime, getdate, now_datetime
 
 CREDIT_ENTRY_DOCTYPE = "MX Lesson Credit Entry"
 
@@ -105,33 +107,123 @@ def _existing_m2_credit(consumption, operation, effect, key):
     return entry
 
 
-def _single_eligible_package(consumption):
+def _locked_package_state(package):
+    credits = frappe.db.sql(
+        f"""SELECT operation_type, effect, source_doctype, source_name
+            FROM `tab{CREDIT_ENTRY_DOCTYPE}`
+            WHERE student_package=%s ORDER BY creation, name FOR UPDATE""",
+        (package.name,), as_dict=True,
+    )
+    expected_grant = "购买授予" if package.acquisition_type == "购买" else "赠送授予"
+    grants = [
+        row for row in credits
+        if row.operation_type == expected_grant
+        and row.source_doctype == "MX Student Package"
+        and row.source_name == package.name
+        and cint(row.effect) == cint(package.credits_granted)
+    ]
+    state = {
+        "balance": sum(cint(row.effect) for row in credits),
+        "has_grant": len(grants) == 1,
+        "net_paid": Decimal("0"),
+        "refund_closed": False,
+    }
+    if package.acquisition_type == "购买":
+        payments = frappe.db.sql(
+            """SELECT name, operation_type, cash_effect, reversal_of
+               FROM `tabMX Payment`
+               WHERE student_package=%s AND docstatus=1
+               ORDER BY creation, name FOR UPDATE""",
+            (package.name,), as_dict=True,
+        )
+        state["net_paid"] = sum((Decimal(str(row.cash_effect or 0)) for row in payments), Decimal("0"))
+        reversed_payments = {
+            row.reversal_of for row in payments
+            if row.operation_type == "撤销" and row.reversal_of
+        }
+        state["refund_closed"] = any(
+            row.operation_type == "退款关闭课包" and row.name not in reversed_payments
+            for row in payments
+        )
+    return state
+
+
+def _throw_no_candidate(reasons):
+    messages = {
+        "refund_closed": "该课程课包已经退款关闭，不能继续扣课。请续费或新购课包。",
+        "frozen": "该课程课包处于欠费冻结：已授予权益但当前净付款低于成交金额。请补足付款后重新提交执行单。",
+        "unpaid": "该课程购买型课包尚未付清。请补足付款，或续费、新购课包。",
+        "future": "该课程课包尚未生效。请核对生效日期，或使用当前有效的新课包。",
+        "expired": "该课程课包已经过期。失效日当天仍可使用，次日起不可扣课；请续费或新购课包。",
+        "exhausted": "该课程课包权益已耗尽。请续费、新购课包，或由 Manager 创建合法赠送包。",
+        "invalid_grant": "该课程课包尚未产生合法初始权益。请检查满款激活或赠送授予流程。",
+        "invalid_metadata": "该课程课包的有效期或类型元数据异常。请由 Manager 检查历史数据后再提交。",
+    }
+    for reason in (
+        "refund_closed", "frozen", "unpaid", "future", "expired", "exhausted",
+        "invalid_grant", "invalid_metadata",
+    ):
+        if reason in reasons:
+            frappe.throw(messages[reason])
+    frappe.throw("没有购买该课程的已提交课包。请新购该课程课包或由 Manager 创建合法赠送包。")
+
+
+def _select_eligible_package(consumption):
     rows = frappe.db.sql(
         """SELECT name, student, package_plan, plan_name_snapshot, course,
-                  course_name_snapshot, effective_from, expires_on, activated_at, demo_batch
+                  course_name_snapshot, acquisition_type, credits_granted, deal_amount,
+                  effective_from, expires_on, activated_at, demo_batch
            FROM `tabMX Student Package`
-           WHERE student=%s AND course=%s AND docstatus=1
+           WHERE student=%s AND docstatus=1
            ORDER BY name FOR UPDATE""",
-        (consumption.student, consumption.course), as_dict=True,
+        (consumption.student,), as_dict=True,
     )
+    matching = [package for package in rows if package.course == consumption.course]
+    if not matching:
+        _throw_no_candidate(set())
     lesson_date = getdate(consumption.scheduled_start)
     eligible = []
-    for package in rows:
-        if not package.activated_at:
+    reasons = set()
+    for package in matching:
+        if package.acquisition_type not in {"购买", "赠送"} or not package.effective_from \
+                or package.expires_on and getdate(package.expires_on) < getdate(package.effective_from):
+            reasons.add("invalid_metadata")
+            continue
+        state = _locked_package_state(package)
+        if state["refund_closed"]:
+            reasons.add("refund_closed")
+            continue
+        if package.acquisition_type == "购买" and state["has_grant"] \
+                and state["net_paid"] < Decimal(str(package.deal_amount)):
+            reasons.add("frozen")
+            continue
+        if state["has_grant"] and not package.activated_at:
+            reasons.add("invalid_grant")
+            continue
+        if not state["has_grant"]:
+            reasons.add(
+                "unpaid" if package.acquisition_type == "购买"
+                and state["net_paid"] < Decimal(str(package.deal_amount)) else "invalid_grant"
+            )
             continue
         if lesson_date < getdate(package.effective_from):
+            reasons.add("future")
             continue
         if package.expires_on and lesson_date > getdate(package.expires_on):
+            reasons.add("expired")
             continue
-        if locked_credit_balance(package.name) >= 1:
-            eligible.append(package)
+        if state["balance"] < 1:
+            reasons.add("exhausted")
+            continue
+        eligible.append(package)
     if not eligible:
-        frappe.throw(
-            "没有可扣减的有效课包：请检查课程是否匹配、课包是否已付清并激活、"
-            "上课日期是否在有效期内，以及剩余课时是否充足。"
-        )
-    if len(eligible) != 1:
-        frappe.throw("存在多个可扣减课包；请等待课包分配规则完成后再提交，系统不会猜测扣减来源。")
+        _throw_no_candidate(reasons)
+    eligible.sort(key=lambda package: (
+        package.expires_on is None,
+        getdate(package.expires_on) if package.expires_on else date.max,
+        get_datetime(package.activated_at),
+        package.name,
+    ))
     return eligible[0]
 
 
@@ -143,7 +235,9 @@ def consume_m2_entry(consumption):
     existing = _existing_m2_credit(consumption, "M2 课消扣减", -1, key)
     if existing:
         return existing
-    package = _single_eligible_package(consumption)
+    package = _select_eligible_package(consumption)
+    if locked_credit_balance(package.name) < 1:
+        frappe.throw("所选课包权益刚刚耗尽，本次执行已回滚。请重新提交以选择下一可用课包。")
     values = {
         "doctype": CREDIT_ENTRY_DOCTYPE,
         "student": consumption.student,

@@ -1,6 +1,6 @@
 # 美心行政 M1 / M2 / M3 开发进度
 
-最后更新：2026-09-21（Asia/Shanghai）
+最后更新：2026-09-22（Asia/Shanghai）
 
 ## 恢复工作规则
 
@@ -57,6 +57,18 @@ git log --oneline -5
 - 新增 9 项 4B 测试，覆盖 `+1/0/-1`、决定和 reversal 重试幂等、无合法包、Credit 唯一冲突、reversal 中途失败与 fresh retry。故障注入确认 Execution、M2 和 M3 均不留半成品。
 - 最终完整隔离回归结果为 `Ran 72 tests in 19.271s / OK`：M1 30/30、M2 22/22、M3 20/20。测试后七类 `TEST-%` 业务表均为 0；隔离 MariaDB 再次确认 Credit Entry 三个业务唯一索引存在。
 - Python 编译、全部 JSON 解析和 `git diff --check` 通过；正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
+
+### 阶段 4C：多课包 FEFO/FIFO、余额边界与状态诊断（已完成）
+
+- 候选查询在原 `schedule_write` 全站事务锁内锁定该学生全部已提交 Student Package，再以当前 Credit/Payment 流水派生合法 grant、余额、净付款、欠费冻结和退款关闭状态；不读取页面余额、缓存或事务前旧结果。
+- 只接受 Student Package 冻结的 Course 与 M2 Consumption Entry Course 精确相同的包，不读取后来修改的 Package Plan。候选按“最早失效日、无失效日最后、最早 `activated_at`、Student Package name”稳定排序。
+- 有效期使用 M2 冻结的原排课计划开始时间和 Frappe 站点业务日；生效日、失效日均可用，失效日次日才过期。最终套件继续确认隔离站时区为 `Asia/Chongqing`，没有硬编码 UTC 偏移。
+- 购买包有合法 grant 但锁内有效净付款低于成交金额时派生为欠费冻结：不删除剩余权益、不改历史课消，只拒绝新扣减；补足付款后自动恢复资格，原唯一 grant 被复用而不重复授予。
+- 无候选时分别提示无该课程课包、尚未付清、已耗尽、尚未生效、已过期、欠费冻结、退款关闭、初始权益异常或有效期/类型元数据异常。提示只含状态类别和处理建议，不泄露其他课包编号、金额或内部明细。
+- grant 存在但缺少 `activated_at`、重复初始 grant、缺失/倒置有效期等历史异常不参与排序和扣减，必须由 Manager 检查数据；系统不会猜测 FIFO 时间或修写旧流水。
+- 最后一课时并发测试确认两个 M2 `+1` 只能一个成功，最终余额为 0。A/B 并发场景下，等待旧快照的请求按既有 MariaDB 策略整体回滚；fresh retry 在锁内重新读取 A=0 后稳定选择 B，只形成合法 M2/M3 链。
+- 新增 19 项 M3 测试。最终完整隔离回归为 `Ran 91 tests in 23.682s / OK`：M1 30/30、M2 22/22、M3 39/39；包含并发、4B 故障注入和全部 4C 边界。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过；隔离测试数据已清理。正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
 
 ## M2 当前状态
 
@@ -272,8 +284,8 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 阶段 4B 已完成完整回归并建立独立 checkpoint；按阶段 4 规则暂不 push。
-2. 等待用户确认后进入阶段 4C：实现完整 FEFO/FIFO、多课包选择及无可用课包原因分类。
+1. 阶段 4C 已完成完整回归并建立独立 checkpoint；按阶段 4 规则暂不 push。
+2. 停止并等待用户确认后进入阶段 4D：付款撤销、退款关闭及 reversal、Manager 人工权益调整。
 3. 所有 migrate、自动化和写入继续只允许在隔离站执行；正式 `frontend` 保持未触碰，直至候选 checkpoint、完整备份和用户明确批准。
 
 ## 明确停止范围
