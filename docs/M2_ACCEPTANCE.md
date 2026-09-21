@@ -4,9 +4,9 @@
 
 ## 当前结论
 
-阶段 1 至阶段 5 已完成。源码审查、静态检查、隔离数据库回归、并发、权限、回滚、清理、唯一索引以及 Scheduler / Manager 真实浏览器点击均通过；阶段 6 以本验收结果形成 M2 candidate checkpoint。
+阶段 1 至阶段 7 已完成。源码审查、静态检查、隔离数据库回归、并发、权限、回滚、清理、唯一索引、Scheduler / Manager 隔离浏览器流程以及正式站只读浏览器验收均通过。
 
-正式 `frontend` 仍运行 M1 镜像 `meixin-admin:m1-final-frappe16.34.0`。M2 未在正式站点 migrate、重建容器或写入数据。
+正式 `frontend` 已运行 M2 final 镜像 `meixin-admin:m2-final-frappe16.34.0`。正式 migrate、健康检查、数据一致性检查和只读冒烟均通过，正式站没有创建测试业务记录。
 
 ## 自动化结果
 
@@ -31,7 +31,7 @@ OK
 - 隔离站 `TEST-M2-%` 课消流水：0。
 - 五项课消规则测试后均恢复“未配置”。
 - MariaDB `tabMX Lesson Consumption Entry.idempotency_key`：`Non_unique=0`、BTREE。
-- 正式六个应用容器仍为 M1 final 镜像；正式数据库未执行 M2 migrate。
+- 正式数据库已存在三个 M2 DocType，三类 M2 业务记录均为 0；`idempotency_key` 为 `Non_unique=0` 的唯一 BTREE。
 
 ## 静态与结构检查
 
@@ -69,4 +69,16 @@ OK
 
 ## 正式部署门禁
 
-真实浏览器门禁已通过，但正式 `frontend` 仍未执行 M2 migrate、镜像构建、容器重建、测试或业务写入。阶段 7 必须先完整备份并向用户说明数据库变化、停机影响和回滚方式，获得明确确认后才能继续。
+正式部署门禁已通过：
+
+- 部署前备份：`D:\FrappeProject\backups\meixin-m2-predeploy-20260921_142856`。数据库 gzip、public/private tar、站点与环境 JSON 可读取，SHA256 全部复核一致。
+- 镜像：`meixin-admin:m2-final-frappe16.34.0`，ID `sha256:35f61720d2d17494011b4d0bb23fcfa15fdc0704f37cc756191da32780a0b30b`；80 个 Git 跟踪文件与 candidate `603807a` 逐文件一致。
+- 仅重建六个应用容器；MariaDB、Redis、sites、logs 和全部持久化卷保持原实例。正式 migrate 与 clear-cache 各一次，退出码 0；未运行 install-app、configurator 或 create-site。
+- schema 已包含 MX Session Execution、MX Session Attendance、MX Lesson Consumption Entry、五项规则字段、权限/Workspace 元数据和 `idempotency_key` 唯一索引。
+- 正式既有 Single 记录对新增 Select 字段没有自动持久化默认值。经用户明确授权，仅对五个空字段通过 `frappe.get_single("MX Settings")` 的正常 Document `set/save` 机制写入“未配置”；所有字段写入前均为空，机构名称、时区和其他设置未修改。
+- 正式浏览器实际确认五项规则均选中“未配置”，Workspace、M1 七个入口、M2 两个入口、Execution/Attendance/Consumption 页面正常；全新标签控制台 `0 error / 0 warn`。
+- 六个应用容器运行同一 M2 final 镜像、重启数 0；MariaDB healthy、Redis PONG，主页、ping、Socket.IO 均 HTTP 200。
+- Administrator 与业务用户均为 `Asia/Chongqing`。部署前后九类 MX 业务记录均为 0，没有测试 Execution、Attendance 或 Consumption Entry。
+- 隔离测试结果保持 M1 30/30、M2 22/22、合计 52/52；正式站未运行测试套件。
+
+回滚基线为 M1 镜像 `meixin-admin:m1-final-frappe16.34.0` 和上述同批部署前完整备份。由于 migrate 已改变 schema，若需完整回退，必须停写并经明确确认后成套恢复数据库与文件；只退应用镜像不等于数据库已回退。

@@ -130,3 +130,17 @@ bench --site frontend restore sites/frontend/private/backups/20260920_190748-fro
 - 正式站点元数据、站点/Administrator 时区、HTTP、工作台、空白新建表单和周课表已只读验证；没有创建业务记录，也没有在正式站点运行测试套件。
 
 若仅需回退 migrate 前的应用镜像，可把 `deploy/pilot-compose.yml` 的六个镜像标签临时改回 `meixin-admin:m1-frappe16.34.0` 后使用同一 `--no-deps` 命令重建六个应用容器。由于本轮 migrate 已改变 DocType schema，若需要恢复数据库/文件，必须停写并经明确确认后使用本节记录的同一批最终备份；不得只退镜像并声称数据库也已回退。
+
+## M2 正式部署状态
+
+2026-09-21 已从 candidate `603807a` 完成 M2 正式部署：
+
+- 部署前完整备份：`D:\FrappeProject\backups\meixin-m2-predeploy-20260921_142856`；数据库、公有文件、私有文件、站点配置、容器/镜像/卷基线均已保存并通过可读性与 SHA256 验证。
+- 正式镜像：`meixin-admin:m2-final-frappe16.34.0`，ID `sha256:35f61720d2d17494011b4d0bb23fcfa15fdc0704f37cc756191da32780a0b30b`；Frappe 16.34.0、ERPNext 16.35.0、meixin_admin 0.1.0。
+- 只用 `--no-deps` 重建六个应用容器；数据库、Redis、sites、logs 和文件卷未重建、删除或恢复。
+- 正式 `bench --site frontend migrate` 与 `clear-cache` 各执行一次并成功；未运行 install-app、configurator、create-site、正式测试套件或演示初始化。
+- migrate 新增三个 M2 DocType、MX Settings 五项规则字段、权限/Workspace 元数据及课消幂等唯一索引。经授权，仅把正式既有 MX Settings Single 中仍为空的五个规则通过正常 Document 保存规范化为“未配置”，没有覆盖非空值或修改其他设置。
+- 最终主页、ping、Socket.IO 均 HTTP 200；MariaDB healthy、Redis PONG；六个应用容器重启数为 0，正式浏览器控制台 0 error / 0 warn。
+- 正式站部署前后 MX Student、MX Teacher、MX Course、MX Room、MX Session、MX Session Student、MX Session Execution、MX Session Attendance、MX Lesson Consumption Entry 均为 0。
+
+M2 完整回滚必须使用本节记录的部署前备份，并把六个应用容器切回 M1 final 镜像；数据库恢复属于破坏性操作，必须先停止业务写入并取得明确确认。不得删除表、字段或 volume 代替恢复。

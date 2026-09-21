@@ -76,6 +76,18 @@ git log --oneline -5
 - 本阶段只更新验收与进度文档，不修改已通过测试的业务代码；本提交作为正式部署前的 M2 candidate checkpoint。
 - 正式六个应用容器仍运行 `meixin-admin:m1-final-frappe16.34.0`；正式 `frontend` 未执行 M2 migrate、容器重建、测试或业务写入。
 
+### 阶段 7：正式部署与冻结验收（已完成）
+
+- 以 candidate `603807a` 构建 `meixin-admin:m2-final-frappe16.34.0`，镜像 ID `sha256:35f61720d2d17494011b4d0bb23fcfa15fdc0704f37cc756191da32780a0b30b`；镜像内 80 个 Git 跟踪文件与 candidate 逐文件 SHA256 一致，Frappe 16.34.0、ERPNext 16.35.0 未升级。
+- 正式 M2 schema 变更前创建 Git 外完整备份 `D:\FrappeProject\backups\meixin-m2-predeploy-20260921_142856`；数据库 gzip、public/private tar、站点配置及环境 JSON 均实际读取通过，SHA256 清单复核一致。
+- 仅用 `--no-deps` 重建 frontend、backend、websocket、queue-short、queue-long、scheduler 六个应用容器；MariaDB、两个 Redis 容器及 sites、logs、数据库和 Redis 持久化卷未重建、删除或恢复。
+- 2026-09-21 约 14:33（Asia/Shanghai）仅执行一次 `bench --site frontend migrate`，随后执行一次 `clear-cache`，退出码均为 0；没有运行 install-app、configurator、create-site、正式测试套件或演示初始化。
+- migrate 同步三个 M2 DocType、五项规则字段、权限、Workspace 和 `idempotency_key` 唯一 BTREE。正式既有 `MX Settings` Single 对新字段没有持久化默认值，浏览器初次显示空白；经用户明确授权，2026-09-21 18:50 通过正常 Document `set/save` 生命周期仅把五个空值规范化为“未配置”，没有覆盖非空值或修改其他设置。
+- 最终真实浏览器逐项通过 Workspace、M1 七个入口、M2 两个入口、Execution 未保存表单内 Attendance 子表、Consumption Entry 列表和五项规则显示；全新标签控制台为 `0 error / 0 warn`。
+- 六个应用容器均运行同一 M2 final 镜像且重启数为 0；MariaDB healthy、两个 Redis PONG，主页、ping 和 Socket.IO 均 HTTP 200，Administrator 与业务用户均为 `Asia/Chongqing`。
+- 正式部署前后 MX Student、Teacher、Course、Room、Session、Session Student、Execution、Attendance 和 Consumption Entry 均为 0；正式站没有创建任何测试业务记录。
+- 隔离自动化结果继续保持 M1 30/30、M2 22/22、合计 52/52；正式站按边界未运行测试套件。
+
 ## 已完成内容
 
 ### 阶段 1：现场核查与修改前备份（已确认）
@@ -216,10 +228,9 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 创建阶段 6 M2 candidate checkpoint。
-2. 停在阶段 7 部署门禁前；先形成正式站完整备份计划和影响说明，不执行备份、migrate、镜像构建或容器重建。
-3. 向用户说明三个新 DocType、五项设置字段、唯一索引、应用容器短时中断、回滚边界，等待明确确认后才可操作正式 `frontend`。
+1. 创建 M2 最终冻结 commit，并确认工作区干净。
+2. 停止后续 Git 操作，等待用户确认是否把 `m2-attendance-consumption` 推进到 `main` 和 `origin`。
 
 ## 明确停止范围
 
-M2 只实现确认排课后的执行、考勤和不可变课消决策流水；不进入收费、课包余额、续费、教师工资、财务、微信、支付、AI 自动排课、大型经营报表或家长端。正式 `frontend` 在用户确认阶段 7 前不得 migrate、重建或写入。
+M2 只实现确认排课后的执行、考勤和不可变课消决策流水；不进入收费、课包余额、续费、教师工资、财务、微信、支付、AI 自动排课、大型经营报表或家长端。M2 正式部署与冻结验收已完成；未经用户确认不得合并 main、push、rebase、reset、force push 或删除 M2 分支。
