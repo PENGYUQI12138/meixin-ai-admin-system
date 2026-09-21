@@ -8,10 +8,14 @@ import threading
 import time
 import unittest
 import uuid
+from datetime import timedelta
+from unittest.mock import patch
 
 import frappe
 from frappe.utils import now_datetime, nowdate
 
+from meixin_admin import consumption
+from meixin_admin import entitlements
 from meixin_admin.tests.run import assert_isolated_site
 
 
@@ -31,6 +35,14 @@ class TestM3Schema(unittest.TestCase):
             "doctype": "MX Course", "course_name": "M3虚构课程",
             "default_duration_minutes": 60, "enabled": 1, "demo_batch": self.batch,
         }).insert()
+        self.teacher = frappe.get_doc({
+            "doctype": "MX Teacher", "teacher_name": "M3虚构教师",
+            "enabled": 1, "demo_batch": self.batch,
+        }).insert()
+        self.room = frappe.get_doc({
+            "doctype": "MX Room", "room_name": "M3虚构教室", "capacity": 8,
+            "enabled": 1, "demo_batch": self.batch,
+        }).insert()
         self.plan = frappe.get_doc({
             "doctype": "MX Package Plan", "plan_name": "M3虚构20课时包",
             "course": self.course.name, "standard_credits": 20,
@@ -46,9 +58,17 @@ class TestM3Schema(unittest.TestCase):
         frappe.set_user("Administrator")
         frappe.db.rollback()
         if self.committed:
+            sessions = frappe.get_all("MX Session", filters={"demo_batch": self.batch}, pluck="name")
+            executions = frappe.get_all(
+                "MX Session Execution", filters={"demo_batch": self.batch}, pluck="name"
+            )
+            for doctype, parents in (("MX Session Attendance", executions), ("MX Session Student", sessions)):
+                if parents:
+                    frappe.db.delete(doctype, {"parent": ["in", parents]})
             doctypes = (
-                "MX Lesson Credit Entry", "MX Payment", "MX Student Package",
-                "MX Package Plan", "MX Student", "MX Course",
+                "MX Lesson Credit Entry", "MX Payment", "MX Student Package", "MX Package Plan",
+                "MX Lesson Consumption Entry", "MX Session Execution", "MX Session",
+                "MX Student", "MX Teacher", "MX Course", "MX Room",
             )
             for doctype in doctypes:
                 names = frappe.get_all(doctype, filters={"demo_batch": self.batch}, pluck="name")
@@ -78,6 +98,28 @@ class TestM3Schema(unittest.TestCase):
             "payment_method": "现金", "paid_at": paid_at or now_datetime(),
             "request_id": request_id, "demo_batch": self.batch,
         }).insert()
+
+    def session(self):
+        start = now_datetime() + timedelta(hours=1)
+        return frappe.get_doc({
+            "doctype": "MX Session", "course": self.course.name,
+            "teacher": self.teacher.name, "room": self.room.name,
+            "start_at": start, "end_at": start + timedelta(hours=1),
+            "students": [{"student": self.student.name}], "demo_batch": self.batch,
+        }).insert().submit()
+
+    def execution(self, status="到课"):
+        session = self.session()
+        return frappe.get_doc({
+            "doctype": "MX Session Execution", "session": session.name,
+            "attendance": [{"student": self.student.name, "attendance_status": status}],
+            "early_completion_reason": "M3 隔离测试提前完成",
+        }).insert()
+
+    def set_rule(self, value):
+        settings = frappe.get_single("MX Settings")
+        settings.present_rule = value
+        settings.save()
 
     def rejected(self, action, exception=frappe.ValidationError):
         savepoint = "mx_m3_" + uuid.uuid4().hex[:12]
@@ -263,6 +305,140 @@ class TestM3Schema(unittest.TestCase):
         frappe.get_doc("MX Payment", second.name).submit()
         self.assertEqual(frappe.db.count("MX Payment", {"student_package": package.name, "docstatus": 1}), 2)
         self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name}), 1)
+
+    def test_12_m2_plus_one_debits_exactly_one_credit(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution().submit()
+        decision = frappe.get_doc(
+            "MX Lesson Consumption Entry", {"execution": execution.name, "operation_type": "决定"}
+        )
+        debit = frappe.get_doc("MX Lesson Credit Entry", {"m2_consumption_entry": decision.name})
+        self.assertEqual((debit.student_package, debit.effect), (package.name, -1))
+        self.assertEqual(debit.idempotency_key, f"m2-consume:{decision.name}")
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
+
+    def test_13_m2_zero_does_not_create_credit_entry(self):
+        package = self.package("赠送").submit()
+        self.set_rule("不课消")
+        execution = self.execution().submit()
+        decision = frappe.get_doc("MX Lesson Consumption Entry", {"execution": execution.name})
+        self.assertEqual(decision.effect, 0)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name}), 1
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 20)
+
+    def test_14_m2_reversal_restores_original_package(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution().submit()
+        decision = frappe.get_doc(
+            "MX Lesson Consumption Entry", {"execution": execution.name, "operation_type": "决定"}
+        )
+        debit = frappe.get_doc("MX Lesson Credit Entry", {"m2_consumption_entry": decision.name})
+        execution.cancel()
+        reversal = frappe.get_doc(
+            "MX Lesson Consumption Entry", {"reversal_of": decision.name}
+        )
+        restore = frappe.get_doc("MX Lesson Credit Entry", {"m2_consumption_entry": reversal.name})
+        self.assertEqual((restore.student_package, restore.effect, restore.reversal_of),
+                         (package.name, 1, debit.name))
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 20)
+
+    def test_15_repeated_m2_decision_does_not_debit_twice(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution().submit()
+        session = frappe.get_doc("MX Session", execution.session)
+        with consumption.schedule_write():
+            repeated, _ = consumption.create_decision(
+                session, self.student.name, "到课", execution=execution.name,
+                key_prefix="execution",
+            )
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"m2_consumption_entry": repeated.name}), 1
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
+
+    def test_16_repeated_m2_reversal_does_not_restore_twice(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution().submit()
+        decision = frappe.db.get_value(
+            "MX Lesson Consumption Entry", {"execution": execution.name, "operation_type": "决定"}, "name"
+        )
+        first = consumption.manual_reverse(decision, "M3 幂等返还测试")
+        second = consumption.manual_reverse(decision, "M3 幂等返还测试")
+        self.assertEqual(first, second)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"m2_consumption_entry": first}), 1
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 20)
+
+    def test_17_no_eligible_package_rolls_back_execution_and_m2(self):
+        self.set_rule("课消")
+        execution = self.execution()
+        self.assertIn("没有可扣减", self.rejected(execution.submit))
+        self.assertEqual(frappe.db.get_value("MX Session Execution", execution.name, "docstatus"), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"operation_type": "M2 课消扣减"}), 0
+        )
+
+    def test_18_credit_unique_failure_rolls_back_execution_and_m2(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution()
+        with patch(
+            "meixin_admin.entitlements.insert_credit_idempotent",
+            side_effect=frappe.UniqueValidationError("测试注入权益唯一键冲突"),
+        ):
+            self.rejected(execution.submit, frappe.UniqueValidationError)
+        self.assertEqual(frappe.db.get_value("MX Session Execution", execution.name, "docstatus"), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name}), 1
+        )
+
+    def test_19_restore_failure_rolls_back_m2_reversal_and_execution_cancel(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution().submit()
+        decision = frappe.db.get_value(
+            "MX Lesson Consumption Entry", {"execution": execution.name, "operation_type": "决定"}, "name"
+        )
+        with patch(
+            "meixin_admin.entitlements.restore_m2_entry",
+            side_effect=frappe.ValidationError("测试注入权益返还失败"),
+        ):
+            self.rejected(execution.cancel)
+        self.assertEqual(frappe.db.get_value("MX Session Execution", execution.name, "docstatus"), 1)
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"reversal_of": decision}), 0)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name}), 2
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
+
+    def test_20_fresh_retry_after_credit_failure_creates_one_chain(self):
+        package = self.package("赠送").submit()
+        self.set_rule("课消")
+        execution = self.execution()
+        with patch(
+            "meixin_admin.entitlements.consume_m2_entry",
+            side_effect=frappe.ValidationError("测试注入扣减前失败"),
+        ):
+            self.rejected(execution.submit)
+        execution.reload().submit()
+        decisions = frappe.get_all(
+            "MX Lesson Consumption Entry",
+            filters={"execution": execution.name, "operation_type": "决定"}, pluck="name",
+        )
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"m2_consumption_entry": decisions[0]}), 1
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
 
 
 if __name__ == "__main__":

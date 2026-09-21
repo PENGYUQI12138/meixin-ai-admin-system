@@ -47,6 +47,17 @@ git log --oneline -5
 - 新增 7 项 4A 测试，覆盖待付款、Scheduler 一次付清、分次付款、超额拒绝、API/double-click 幂等、赠送包和并发付款安全重试。最终完整结果为 `Ran 63 tests in 16.932s / OK`：M1 30/30、M2 22/22、M3 11/11。
 - 测试后隔离站 `TEST-M3-%` 的 Package Plan、Student Package、Payment、Credit Entry、Student 和 Course 均为 0。Python 编译和 `git diff --check` 通过；正式 `frontend` 未 migrate、未重建、未写入。
 
+### 阶段 4B：M2 与课时权益同事务联动（已完成）
+
+- 仅在冻结的 `consumption.py` 增加窄调用点：M2 `+1` 决定同步调用权益服务生成唯一 `-1`，`0` 明确不动作，M2 `-1` reversal 同步对原扣减生成唯一 `+1`。
+- 扣减使用 `m2-consume:<M2 Consumption Entry>`，返还使用 `m2-restore:<M2 reversal Consumption Entry>`；应用层核对相同键内容，MariaDB 的 `idempotency_key`、非空 `m2_consumption_entry` 和非空 `reversal_of` 唯一索引继续作为最终防线。
+- reversal 固定返还原 `-1` Credit Entry 所属 Student Package，不重新选包、不覆盖旧流水。所有调用沿用原 `schedule_write` 和 Frappe 请求事务，没有手动 commit、异步任务或新锁服务。
+- 4B 先实现单一合法候选的安全扣减；没有候选或存在多个候选均明确拒绝并整体回滚，不猜测课包。完整 FEFO/FIFO、多原因分类和多课包分配保留到 4C。
+- M2 22 项旧测试只扩充已激活赠送课包夹具，未删除或弱化原断言；并发双提交测试改为真实 `+1`，确认只有一条 M2 决定及一条 M3 扣减。
+- 新增 9 项 4B 测试，覆盖 `+1/0/-1`、决定和 reversal 重试幂等、无合法包、Credit 唯一冲突、reversal 中途失败与 fresh retry。故障注入确认 Execution、M2 和 M3 均不留半成品。
+- 最终完整隔离回归结果为 `Ran 72 tests in 19.271s / OK`：M1 30/30、M2 22/22、M3 20/20。测试后七类 `TEST-%` 业务表均为 0；隔离 MariaDB 再次确认 Credit Entry 三个业务唯一索引存在。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过；正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
+
 ## M2 当前状态
 
 ### 阶段 1：设计与分支基线（已完成）
@@ -261,9 +272,9 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 创建阶段 4A 独立 checkpoint，确认工作区干净；按阶段 4 规则暂不 push。
-2. 进入阶段 4B：只在 M2 `consumption.py` 增加最窄必要集成，实现 `+1` 扣权益、`0` 不动作、`-1` 返还及整体失败回滚。
-3. 阶段 4B 完成后继续完整 M1/M2/M3 回归并建立独立 checkpoint；所有写入仍只在隔离站执行。
+1. 阶段 4B 已完成完整回归并建立独立 checkpoint；按阶段 4 规则暂不 push。
+2. 等待用户确认后进入阶段 4C：实现完整 FEFO/FIFO、多课包选择及无可用课包原因分类。
+3. 所有 migrate、自动化和写入继续只允许在隔离站执行；正式 `frontend` 保持未触碰，直至候选 checkpoint、完整备份和用户明确批准。
 
 ## 明确停止范围
 

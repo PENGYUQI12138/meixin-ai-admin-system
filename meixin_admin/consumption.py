@@ -90,7 +90,12 @@ def create_decision(session, student, outcome, *, execution=None, reason=None, k
         session, student, outcome, rule_result, "决定", 1 if rule_result == "课消" else 0, key,
         execution=execution, reason=reason,
     )
-    return insert_idempotent(values), rule_result
+    entry = insert_idempotent(values)
+    if cint(entry.effect) == 1:
+        from meixin_admin.entitlements import consume_m2_entry
+
+        consume_m2_entry(entry)
+    return entry, rule_result
 
 
 def create_reversal(original, *, key_prefix, reason):
@@ -100,6 +105,10 @@ def create_reversal(original, *, key_prefix, reason):
         existing = frappe.get_doc(ENTRY_DOCTYPE, existing_name)
         if (existing.reversal_of, existing.reason or "") != (original.name, reason or ""):
             frappe.throw("相同撤销请求包含不同内容，已停止写入。", title="课消数据冲突")
+        if cint(existing.effect) == -1:
+            from meixin_admin.entitlements import restore_m2_entry
+
+            restore_m2_entry(original, existing)
         return existing
     other = frappe.db.get_value(ENTRY_DOCTYPE, {"reversal_of": original.name}, "name")
     if other:
@@ -110,7 +119,12 @@ def create_reversal(original, *, key_prefix, reason):
         -1 if cint(original.effect) == 1 else 0, key,
         execution=original.execution, reversal_of=original.name, reason=reason,
     )
-    return insert_idempotent(values)
+    reversal = insert_idempotent(values)
+    if cint(reversal.effect) == -1:
+        from meixin_admin.entitlements import restore_m2_entry
+
+        restore_m2_entry(original, reversal)
+    return reversal
 
 
 def reverse_execution(execution):
@@ -125,7 +139,13 @@ def reverse_execution(execution):
     for row in rows:
         existing = frappe.db.get_value(ENTRY_DOCTYPE, {"reversal_of": row.name}, "name")
         if existing:
-            reversals.append(frappe.get_doc(ENTRY_DOCTYPE, existing))
+            original = frappe.get_doc(ENTRY_DOCTYPE, row.name)
+            reversal = frappe.get_doc(ENTRY_DOCTYPE, existing)
+            if cint(reversal.effect) == -1:
+                from meixin_admin.entitlements import restore_m2_entry
+
+                restore_m2_entry(original, reversal)
+            reversals.append(reversal)
             continue
         reversals.append(create_reversal(
             frappe.get_doc(ENTRY_DOCTYPE, row.name),
@@ -146,7 +166,12 @@ def create_session_cancel_decisions(session):
             f"session-cancel:{session.name}:{row.student}",
             reason=f"取消排课 {session.name}",
         )
-        entries.append(insert_idempotent(values))
+        entry = insert_idempotent(values)
+        if cint(entry.effect) == 1:
+            from meixin_admin.entitlements import consume_m2_entry
+
+            consume_m2_entry(entry)
+        entries.append(entry)
     return entries
 
 
