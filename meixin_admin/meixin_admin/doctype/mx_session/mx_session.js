@@ -1,9 +1,43 @@
+async function set_default_end(frm) {
+	if (!frm.doc.course || !frm.doc.start_at || frm._mx_end_manually_set) return;
+	const result = await frappe.db.get_value("MX Course", frm.doc.course, "default_duration_minutes");
+	const duration = Number(result.message?.default_duration_minutes || 0);
+	if (duration <= 0 || frm._mx_end_manually_set) return;
+	const start_at = frappe.datetime.str_to_obj(frm.doc.start_at);
+	const end_at = moment(start_at).add(duration, "minutes").format(frappe.defaultDatetimeFormat);
+	frm._mx_setting_default_end = true;
+	try {
+		await frm.set_value("end_at", end_at);
+		frm._mx_auto_end_at = frm.doc.end_at;
+	} finally {
+		frm._mx_setting_default_end = false;
+	}
+}
+
 frappe.ui.form.on("MX Session", {
+	onload(frm) {
+		frm._mx_auto_end_at = null;
+		frm._mx_end_manually_set = Boolean(frm.doc.end_at);
+	},
+
 	setup(frm) {
 		for (const fieldname of ["course", "teacher", "room"]) {
 			frm.set_query(fieldname, () => ({ filters: { enabled: 1 } }));
 		}
 		frm.set_query("student", "students", () => ({ filters: { enabled: 1 } }));
+	},
+
+	course(frm) {
+		return set_default_end(frm);
+	},
+
+	start_at(frm) {
+		return set_default_end(frm);
+	},
+
+	end_at(frm) {
+		if (frm._mx_setting_default_end) return;
+		frm._mx_end_manually_set = Boolean(frm.doc.end_at && frm.doc.end_at !== frm._mx_auto_end_at);
 	},
 
 	async refresh(frm) {
@@ -18,7 +52,7 @@ frappe.ui.form.on("MX Session", {
 		const context = result.message;
 		if (!context) return;
 		const site_zone = frappe.utils.escape_html(context.time_zone);
-		const user_zone = frappe.utils.escape_html(frappe.boot.time_zone?.user || context.time_zone);
+		const user_zone = frappe.utils.escape_html(context.user_time_zone || context.time_zone);
 		frm.fields_dict.booking_notice.$wrapper.html(
 			`<div class="alert alert-info">站点时区：${site_zone}；表单与日历按当前用户时区 ${user_zone} 显示。` +
 			"草稿不占用时段，提交才确认。</div>"

@@ -13,7 +13,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import get_system_timezone, now_datetime
 
 from meixin_admin import api, demo
 from meixin_admin.tests.run import assert_isolated_site
@@ -54,6 +54,8 @@ class TestM1(unittest.TestCase):
             frappe.db.commit()
 
     def master(self, doctype, **fields):
+        if doctype == "MX Student":
+            fields.setdefault("guardian_phone", "00000000000")
         return frappe.get_doc({"doctype": doctype, "demo_batch": self.batch, "enabled": 1, **fields}).insert()
 
     def session(self, *, minutes=0, duration=60, students=None, teacher=None, room=None, course=None, insert=True):
@@ -113,13 +115,10 @@ class TestM1(unittest.TestCase):
     def test_06_invalid_periods(self):
         for duration in (0, -60):
             self.assertIn("结束时间", self.rejected(lambda: self.session(duration=duration)))
-        for field in ("start_at", "end_at"):
-            candidate = self.session(insert=False)
-            # None 不得被 Frappe get_datetime 转成当前时间而绕过必填。
-            if field == "end_at":
-                candidate.start_at = now_datetime() - timedelta(days=1)
-            candidate.set(field, None)
-            self.rejected(candidate.insert)
+        candidate = self.session(insert=False)
+        # None 不得被 Frappe get_datetime 转成当前时间而绕过必填。
+        candidate.start_at = None
+        self.rejected(candidate.insert)
 
     def test_07_duplicate_and_empty_students(self):
         self.rejected(lambda: self.session(students=[self.students[0].name] * 2))
@@ -435,3 +434,46 @@ class TestM1(unittest.TestCase):
         session.reload()
         session.cancel()
         self.assertEqual(frappe.get_doc("MX Session", session.name).students[0].student, self.students[0].name)
+
+    def test_28_student_course_fields_and_required_phone(self):
+        student = self.master(
+            "MX Student", student_name="标准化虚构学生", school="虚构学校", grade="初一"
+        )
+        self.assertEqual((student.school, student.grade), ("虚构学校", "初一"))
+        self.rejected(lambda: frappe.get_doc({
+            "doctype": "MX Student", "student_name": "缺少电话虚构学生", "enabled": 1,
+            "demo_batch": self.batch,
+        }).insert())
+        course = self.master(
+            "MX Course", course_name="标准化虚构课程", subject="数学", default_duration_minutes=75
+        )
+        self.assertEqual(course.subject, "数学")
+        self.rejected(lambda: self.master(
+            "MX Student", student_name="非标准年级", grade="七年级"
+        ))
+        self.rejected(lambda: self.master(
+            "MX Course", course_name="非标准学科", subject="数学课", default_duration_minutes=60
+        ))
+
+    def test_29_default_duration_only_fills_missing_end(self):
+        self.courses[0].default_duration_minutes = 75
+        self.courses[0].save()
+        automatic = self.session(insert=False)
+        automatic.end_at = None
+        automatic.insert()
+        self.assertEqual(automatic.end_at - automatic.start_at, timedelta(minutes=75))
+        manual = self.session(duration=40)
+        self.assertEqual(manual.end_at - manual.start_at, timedelta(minutes=40))
+
+    def test_30_business_user_timezone_matches_site(self):
+        from meixin_admin.install import align_business_user_timezones
+
+        self.assertEqual(get_system_timezone(), "Asia/Chongqing")
+        scheduler = self.user("Meixin Scheduler")
+        frappe.db.set_value("User", "Administrator", "time_zone", "Asia/Kolkata", update_modified=False)
+        frappe.db.set_value("User", scheduler, "time_zone", "Asia/Kolkata", update_modified=False)
+        align_business_user_timezones()
+        self.assertEqual(frappe.db.get_value("User", "Administrator", "time_zone"), get_system_timezone())
+        self.assertEqual(frappe.db.get_value("User", scheduler, "time_zone"), get_system_timezone())
+        frappe.set_user(scheduler)
+        self.assertEqual(api.get_context()["user_time_zone"], get_system_timezone())

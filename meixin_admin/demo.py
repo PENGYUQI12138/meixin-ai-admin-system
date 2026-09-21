@@ -65,13 +65,16 @@ def initialize(batch=DEFAULT_BATCH, start_date=None):
             return frappe.get_doc({"doctype": doctype, "demo_batch": batch, **fields}).insert().name
 
         students = [
-            add("MX Student", student_name=f"演示学生{number}", grade="演示年级", notes="虚构演示资料", enabled=1)
+            add("MX Student", student_name=f"演示学生{number}", school="演示学校",
+                grade=("一", "二", "三", "四", "五", "六")[number - 1] + "年级",
+                guardian_phone="00000000000", notes="虚构演示资料", enabled=1)
             for number in range(1, 7)
         ]
         teachers = [add("MX Teacher", teacher_name=f"演示教师{number}", enabled=1) for number in (1, 2)]
         courses = [
-            add("MX Course", course_name=f"演示课程{number}", subject="虚构科目", default_duration_minutes=60, enabled=1)
-            for number in (1, 2)
+            add("MX Course", course_name=f"演示课程{number}", subject=subject,
+                default_duration_minutes=60, enabled=1)
+            for number, subject in ((1, "数学"), (2, "英语"))
         ]
         rooms = [add("MX Room", room_name=f"演示教室{number}", capacity=6, enabled=1) for number in (1, 2)]
         for index in range(3):

@@ -24,6 +24,7 @@ frappe.views.calendar["MX Session"] = {
 		slotMinTime: "00:00:00",
 		slotMaxTime: "24:00:00",
 		scrollTime: "08:00:00",
+		scrollTimeReset: true,
 		allDaySlot: false,
 		eventStartEditable: false,
 		eventDurationEditable: false,
@@ -66,6 +67,7 @@ frappe.views.calendar["MX Session"] = {
 			banner.className = "text-muted small mb-3 mx-calendar-guide";
 			banner.textContent = `橙色：草稿（不占时段）；绿色：已确认；已取消默认隐藏。显示时区：${zone}。点击课节查看详情，调整排课请进入表单。`;
 			info.el.prepend(banner);
+			requestAnimationFrame(() => info.view.calendar.scrollToTime("08:00:00"));
 		},
 	},
 };

@@ -1,10 +1,16 @@
 import frappe
-from frappe.utils import get_datetime
+from frappe.utils import add_to_date, cint, get_datetime
 
 from meixin_admin.scheduling import SchedulingDocument, ensure_no_conflicts, validate_session
 
 
 class MXSession(SchedulingDocument):
+    def before_validate(self):
+        if self.course and self.start_at and not self.end_at:
+            duration = cint(frappe.db.get_value("MX Course", self.course, "default_duration_minutes"))
+            if duration > 0:
+                self.end_at = add_to_date(get_datetime(self.start_at), minutes=duration)
+
     def validate(self):
         validate_session(self)
 

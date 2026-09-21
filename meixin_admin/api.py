@@ -10,8 +10,10 @@ from meixin_admin.scheduling import checked_period
 @frappe.whitelist()
 def get_context():
     require_member()
+    site_zone = get_system_timezone()
     return {
-        "time_zone": get_system_timezone(),
+        "time_zone": site_zone,
+        "user_time_zone": frappe.db.get_value("User", frappe.session.user, "time_zone") or site_zone,
         "institution_name": frappe.db.get_single_value("MX Settings", "institution_name") or "美心",
     }
 

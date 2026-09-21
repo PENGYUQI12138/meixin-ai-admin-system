@@ -4,7 +4,7 @@ frappe.ui.form.on("MX Settings", {
 		const context = result.message;
 		if (!context) return;
 		const zone = frappe.utils.escape_html(context.time_zone);
-		const user_zone = frappe.utils.escape_html(frappe.boot.time_zone?.user || context.time_zone);
+		const user_zone = frappe.utils.escape_html(context.user_time_zone || context.time_zone);
 		const offset = moment.tz(context.time_zone).utcOffset();
 		const warning = offset !== 480
 			? '<p class="text-danger">当前站点时区与中国时间（UTC+8）不同。请先确认排课时间的换算和影响，再由系统管理员决定是否更改全站时区。</p>'

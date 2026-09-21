@@ -97,7 +97,9 @@ def configure_browser():
         frappe.db.set_single_value("System Settings", {
             "time_zone": "Asia/Chongqing", "language": "zh", "setup_complete": 1,
         })
-        frappe.db.set_value("User", "Administrator", "language", "zh")
+        frappe.db.set_value("User", "Administrator", {
+            "language": "zh", "time_zone": "Asia/Chongqing",
+        })
         frappe.db.commit()
         frappe.clear_cache()
     finally:

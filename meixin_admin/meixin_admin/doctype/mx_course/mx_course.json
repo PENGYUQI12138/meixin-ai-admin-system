@@ -21,8 +21,9 @@
   },
   {
    "fieldname": "subject",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "学科",
+   "options": "\n语文\n数学\n英语\n物理\n化学\n生物\n政治\n历史\n地理\n科学\n信息技术\n综合\n其他",
    "in_list_view": 1
   },
   {

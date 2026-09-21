@@ -1,5 +1,6 @@
 """Non-destructive schema setup. No demo data or user accounts."""
 import frappe
+from frappe.utils import get_system_timezone
 
 DOCTYPES = ["MX Student", "MX Teacher", "MX Course", "MX Room", "MX Session",
             "MX Session Student", "MX Settings"]
@@ -27,4 +28,18 @@ def after_migrate():
         frappe.db.set_single_value("MX Settings", "institution_name", "美心")
     frappe.db.add_index("MX Session", ["docstatus", "start_at", "end_at"], "mx_session_period")
     frappe.db.add_index("MX Session Student", ["student", "parent"], "mx_student_session")
+    align_business_user_timezones()
 
+
+def align_business_user_timezones():
+    """Use Frappe's site timezone for administrators who operate Meixin data."""
+    site_zone = get_system_timezone()
+    users = {"Administrator"}
+    users.update(frappe.get_all(
+        "Has Role",
+        filters={"parenttype": "User", "role": ["in", ["Meixin Manager", "Meixin Scheduler"]]},
+        pluck="parent",
+    ))
+    for user in users:
+        if frappe.db.exists("User", user) and frappe.db.get_value("User", user, "time_zone") != site_zone:
+            frappe.db.set_value("User", user, "time_zone", site_zone, update_modified=False)

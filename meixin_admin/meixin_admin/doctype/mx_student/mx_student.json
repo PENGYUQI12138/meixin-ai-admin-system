@@ -6,6 +6,7 @@
  "custom": 0,
  "field_order": [
   "student_name",
+  "school",
   "grade",
   "guardian_name",
   "guardian_phone",
@@ -23,10 +24,19 @@
    "description": "姓名可以重复，以系统自动生成的学生编号区分。"
   },
   {
-   "fieldname": "grade",
+   "fieldname": "school",
    "fieldtype": "Data",
+   "label": "就读学校",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Select",
    "label": "年级",
-   "in_list_view": 1
+   "options": "\n一年级\n二年级\n三年级\n四年级\n五年级\n六年级\n初一\n初二\n初三\n高一\n高二\n高三",
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "guardian_name",
@@ -37,6 +47,7 @@
    "fieldname": "guardian_phone",
    "fieldtype": "Data",
    "label": "监护人电话",
+   "reqd": 1,
    "description": "允许兄弟姐妹共用电话。"
   },
   {
@@ -99,6 +110,6 @@
  "autoname": "MX-STU-.#####",
  "naming_rule": "Expression (old style)",
  "title_field": "student_name",
- "search_fields": "student_name",
+ "search_fields": "student_name,school,grade,guardian_phone",
  "show_title_field_in_link": 1
 }

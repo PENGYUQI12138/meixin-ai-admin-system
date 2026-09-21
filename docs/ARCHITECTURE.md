@@ -2,7 +2,7 @@
 
 ## 原生结构
 
-独立 Frappe App `meixin_admin`，模块 `Meixin Admin`，七个标准 DocType。四类档案与排课自动编号、启用变更记录，学生姓名和监护人电话不唯一；教师 `user` 可空，非空由数据库唯一约束保护。`MX Session Student` 是子表，权限继承父排课。`MX Settings` 为 Single，只存机构名称，不更改 System Settings。
+独立 Frappe App `meixin_admin`，模块 `Meixin Admin`，七个标准 DocType。四类档案与排课自动编号、启用变更记录，学生姓名和监护人电话不唯一；监护人电话对新建及后续编辑必填，既有空值不伪造回填。学生年级和课程学科使用受控 Select，学生可记录就读学校。教师 `user` 可空，非空由数据库唯一约束保护。`MX Session Student` 是子表，权限继承父排课。`MX Settings` 为 Single，只存机构名称，不更改 System Settings。
 
 DocType JSON、控制器、Role fixture、Workspace、日历配置、翻译与迁移 hook 全部进入源码。安装不灌演示数据，不授予用户任何角色。没有独立网站。
 
@@ -21,6 +21,8 @@ MariaDB 是本轮支持和验证的数据库。`SchedulingDocument.insert` / `_s
 ```
 
 使用完整 Datetime，10:00 衔接允许，跨日/午夜无需截断。草稿照常校验名单、时间、容量、启用状态，但不查询占用；提交重新校验并检查冲突。取消把 docstatus 改成 2，只有事务提交后才释放占用。已提交排课禁止更新，通过取消→修订→重新提交变更。已提交或已取消的排课不能删除，以保留历史；管理员仍可删除未提交草稿。
+
+课程默认时长只在排课结束时间为空时补齐，客户端用于减少录入，服务器用于 API/异常客户端兜底；人工填写的结束时间不覆盖。Administrator 和已分配美心业务角色的用户使用 Frappe User 时区字段对齐站点时区，数据库仍按 Frappe 原生 Datetime 机制处理，不做固定偏移换算。
 
 粗粒度锁意味着同一时刻一个写事务，适合 4 名行政、每周末约 30 节课。长时间不提交的外部 Console 事务会阻塞其他写入；日常使用 HTTP 表单/API，不在持锁期间等待人工输入。后续只有测得锁争用后才考虑资源锁，不能牺牲检查与写入的原子性。
 

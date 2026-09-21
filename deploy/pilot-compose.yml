@@ -2,18 +2,18 @@
 # Does NOT change db, redis, sites, logs, ports, or init-service configuration.
 services:
   backend:
-    image: meixin-admin:m1-frappe16.34.0
+    image: meixin-admin:m1-final-frappe16.34.0
   frontend:
-    image: meixin-admin:m1-frappe16.34.0
+    image: meixin-admin:m1-final-frappe16.34.0
     command: [/bin/sh, /home/frappe/frappe-bench/apps/meixin_admin/deploy/nginx-entrypoint.sh]
     environment:
       SOCKETIO_UPSTREAM_ORIGIN: http://frontend:8080
       SOCKETIO_UPSTREAM_HOST: frontend:8080
   websocket:
-    image: meixin-admin:m1-frappe16.34.0
+    image: meixin-admin:m1-final-frappe16.34.0
   queue-short:
-    image: meixin-admin:m1-frappe16.34.0
+    image: meixin-admin:m1-final-frappe16.34.0
   queue-long:
-    image: meixin-admin:m1-frappe16.34.0
+    image: meixin-admin:m1-final-frappe16.34.0
   scheduler:
-    image: meixin-admin:m1-frappe16.34.0
+    image: meixin-admin:m1-final-frappe16.34.0

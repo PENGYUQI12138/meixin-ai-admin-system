@@ -118,3 +118,15 @@ bench --site frontend restore sites/frontend/private/backups/20260920_190748-fro
 如果恢复到安装 M1 之前，数据库、原文件、配置、App 列表及应用镜像要成套对齐；不要仅退镜像留下数据库仍引用 meixin_admin。切勿用 uninstall-app、reinstall 或删除卷替代恢复。
 
 实际安装状态、测试结果与未验证项以 M1_ACCEPTANCE.md 最后记录为准。
+
+## M1 最终人工验收整改部署状态
+
+2026-09-21 已在独立 `test_meixin_m1.localhost` 完成新增学生字段、年级/学科标准选项、排课默认结束时间和业务用户时区对齐的迁移与验证。用户随后明确确认正式部署，现已完成：
+
+- 新备份目录：`D:\FrappeProject\backups\meixin-m1-final-20260921_095041`，包含数据库、公有文件、私有文件、站点配置及 `SHA256SUMS.txt`；数据库 gzip、两个 tar 和配置 JSON 均已实际读取验证。
+- 最终镜像：`meixin-admin:m1-final-frappe16.34.0`，ID `sha256:b5dcea32c81713473225e8d40e5e2cf25c9f6a98b911af245cd94e1650feab97`。
+- 仅重建六个应用容器；数据库容器 ID 保持 `1941326f3201…`，redis-cache 保持 `4630dbea8b51…`，redis-queue 保持 `a0762a1e8554…`，原持久化卷未改动。
+- `bench --site frontend migrate` 与 `clear-cache` 各执行一次并成功；未运行 `install-app`、configurator 或 create-site。
+- 正式站点元数据、站点/Administrator 时区、HTTP、工作台、空白新建表单和周课表已只读验证；没有创建业务记录，也没有在正式站点运行测试套件。
+
+若仅需回退 migrate 前的应用镜像，可把 `deploy/pilot-compose.yml` 的六个镜像标签临时改回 `meixin-admin:m1-frappe16.34.0` 后使用同一 `--no-deps` 命令重建六个应用容器。由于本轮 migrate 已改变 DocType schema，若需要恢复数据库/文件，必须停写并经明确确认后使用本节记录的同一批最终备份；不得只退镜像并声称数据库也已回退。
