@@ -71,6 +71,15 @@ git log --oneline -5
 - Guest 访问美心上下文及日历 API 均为 HTTP 403；最近应用日志无 Traceback/ERROR/CRITICAL/ModuleNotFoundError。
 - 未运行演示初始化、未创建账号、未在 `frontend` 运行测试套件。
 
+### 阶段 7：关机中断恢复与正式站点可视验收（已完成）
+
+- Windows 正常关机后先核对 Git、镜像、容器、卷、站点和运行配置，没有重复安装、迁移或测试。
+- 六个应用容器均运行最终镜像 `meixin-admin:m1-frappe16.34.0`，镜像 ID 为 `sha256:a56341d2de5321e8cc6d9944a9e9e4d53fb3cad77bb9e43e4c317fd8bd143c9c`；MariaDB 健康，Redis、`sites`、`logs`、`db-data` 等持久化卷存在并正常挂载。
+- 正式入口 Nginx 的 `/socket.io` 使用内部可达的 `Origin: http://frontend:8080` 与 `Host: frontend:8080`；隔离入口使用 `http://app:18081` / `app:18081`。两套入口均保持浏览器同源访问，解决独立 WebSocket 容器无法通过 `localhost:8080` 回调认证的问题。
+- `http://localhost:8080` 返回 HTTP 200；正式站点全新浏览器页不再出现 `Invalid origin`、`fetch failed`、error 或 warn。
+- 已只读走通正式“美心行政”工作台、学生/教师/课程/教室新建空表单、排课新建空表单、机构设置和周课表；字段、草稿提示、图例、筛选和 `Asia/Chongqing` 时区显示正确。
+- 正式站点未保存任何业务记录；隔离环境重启后再次打开周课表，既有虚构数据正常显示且控制台 0 error、0 warn。
+
 ## 修改文件
 
 - App 元数据与钩子：`pyproject.toml`、`meixin_admin/hooks.py`、`modules.txt`、`patches.txt`。
@@ -93,17 +102,20 @@ git log --oneline -5
 - 2026-09-21 首次重跑最新 27 项时，Frappe 16 顶层 `frappe.has_permission` 不接受 `print_logs`，27 项均在同一入口报错；修为 `frappe.permissions.has_permission` 的版本兼容调用后再次完整运行，结果为 `Ran 27 tests in 10.790s / OK`。
 - 最终复核修复后再次完整运行：`Ran 27 tests in 13.350s / OK`，0 失败、0 错误、0 跳过。
 - 浏览器已实际走通工作台→建档→排课→提交→冲突→周课表；全新最终课表页控制台 0 error、0 warn。
-- 目标 `frontend` 已完成安装、迁移及服务/API 冒烟；登录后的可视点击检查尚待完成。
+- 目标 `frontend` 已完成安装、迁移、服务/API 冒烟及登录后的只读可视验收；全新最终课表页控制台 0 error、0 warn。
+- 关机恢复后的两套 Compose `config --quiet`、最终 Nginx 启动脚本 `sh -n`、`git diff --check` 均通过；正式入口再次返回 HTTP 200，九个相关容器运行且 MariaDB 健康。
+- 最近正式 WebSocket 日志未匹配 `Invalid origin`、`fetch failed`、Traceback、ERROR、CRITICAL 或 ModuleNotFoundError。
 
 ## 未完成事项
 
-- 用户在已打开的 `http://localhost:8080` 登录页完成登录后，检查目标工作台、表单入口和周课表；不创建真实数据。
+- M1 范围内无未完成开发或验收事项。
+- 非管理员业务账号的浏览器点击流程未单独执行；对应权限矩阵已由隔离集成测试覆盖。
 
 ## 下一步操作
 
-1. 用户在已打开的目标站点登录页完成登录。
-2. 完成工作台、档案新建入口、排课新建入口、周课表和控制台的可视冒烟。
-3. 更新验收记录与本文件，提交最终 Git commit，然后按 M1 范围停止。
+1. 本阶段最终稳定状态已提交，提交信息为 `fix: stabilize Socket.IO proxy across compose environments`。
+2. 用户可按 `docs/M1_ACCEPTANCE.md` 在 `http://localhost:8080` 做 M1 人工复核。
+3. M1 开发停止；下一阶段需求另行确认后再开始。
 
 ## 明确停止范围
 

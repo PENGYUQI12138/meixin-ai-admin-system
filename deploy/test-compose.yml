@@ -48,10 +48,12 @@ services:
       UPSTREAM_REAL_IP_RECURSIVE: "off"
       PROXY_READ_TIMEOUT: 120
       CLIENT_MAX_BODY_SIZE: 10m
+      SOCKETIO_UPSTREAM_ORIGIN: http://app:18081
+      SOCKETIO_UPSTREAM_HOST: app:18081
     ports:
       - 127.0.0.1:18081:8080
     volumes:
-      - ./test-nginx.sh:/opt/meixin-test/nginx.sh:ro
+      - ./nginx-entrypoint.sh:/opt/meixin-test/nginx.sh:ro
     depends_on:
       app:
         condition: service_started

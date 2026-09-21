@@ -84,6 +84,14 @@ docker exec frappe_docker-backend-1 bash -lc 'cd /home/frappe/frappe-bench && be
 - Guest 调用美心上下文及日历 API 均返回 HTTP 403；最近应用容器日志未发现 Traceback、ERROR、CRITICAL 或 ModuleNotFoundError。
 - 安装没有执行演示初始化，也没有创建业务账号；未在 `frontend` 运行测试套件。
 
+### 2026-09-21 关机恢复与 Socket.IO 最终状态
+
+- Windows 正常关机后重新核对，而非重复安装。六个应用容器均使用最终镜像 `meixin-admin:m1-frappe16.34.0`，镜像 ID `sha256:a56341d2de5321e8cc6d9944a9e9e4d53fb3cad77bb9e43e4c317fd8bd143c9c`。
+- MariaDB 健康，Redis 运行；`frappe_docker_db-data`、`frappe_docker_sites`、`frappe_docker_logs` 及 Redis 持久化卷仍存在。六个应用容器继续挂载原 `sites` 与 `logs` 卷。
+- 正式 Nginx 的 `/socket.io` 仍代理到 `websocket:9000`，并将认证所需的 Origin/Host 设置为容器网络内可达且相互匹配的 `http://frontend:8080` / `frontend:8080`。这避免独立 WebSocket 容器把公开地址 `localhost:8080` 解释为自身。
+- 正式入口 `http://localhost:8080` 返回 HTTP 200；全新登录态浏览器页面完成工作台、空白新建表单、机构设置和周课表只读验收，控制台 0 error、0 warn。
+- 恢复检查没有再次执行 `install-app`、`migrate`、测试套件、演示初始化或任何数据写入；没有删除、恢复或重建持久化卷。
+
 原服务日常启动（只启动存在的容器，不触发 Compose 初始化依赖）：
 
 ```powershell

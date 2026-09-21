@@ -68,7 +68,7 @@ bench --site test_meixin_m1.localhost execute meixin_admin.tests.run.run
 docker restart meixin_m1_test-app-1
 ```
 
-容器启动会重新写入当前 bind mount 源码的 Python 路径文件，不访问外网下载构建依赖；不需要修改框架源码或运行前端打包。Desk 表单、DocType JS、Calendar JS 与 Page JS 由 Frappe 原生机制加载。实时消息由同一隔离 App 容器中的 Node 进程提供，Nginx 入口把同源 `/socket.io` 请求转发到该进程；两者随隔离环境一起停止。这里没有为测试运行队列 worker 或 scheduler，M1 排课同步提交不依赖后台任务。
+容器启动会重新写入当前 bind mount 源码的 Python 路径文件，不访问外网下载构建依赖；不需要修改框架源码或运行前端打包。Desk 表单、DocType JS、Calendar JS 与 Page JS 由 Frappe 原生机制加载。实时消息由同一隔离 App 容器中的 Node 进程提供，Nginx 入口把同源 `/socket.io` 请求转发到该进程，并使用内部可达且相互匹配的 `Origin: http://app:18081`、`Host: app:18081` 完成认证回调；两者随隔离环境一起停止。这里没有为测试运行队列 worker 或 scheduler，M1 排课同步提交不依赖后台任务。
 
 宿主机若配置了 HTTP 代理，可以这样绕过代理核验本地入口：
 
@@ -83,5 +83,6 @@ curl.exe --noproxy '*' -I http://127.0.0.1:18081/login
 - `validation/isolated-integration-initial-failures.log` 保留第一次实际运行暴露的问题，未把失败记录改写成通过。
 - `validation/isolated-integration-tests.log` 保存当前完整测试输出；最终统计以该文件及 `M1_ACCEPTANCE.md` 为准。
 - 安装及迁移已在这个隔离站点实际完成。业务试点站点的安装状态另见 `ENVIRONMENT.md`，不能由隔离环境的成功推断。
+- 2026-09-21 关机恢复后，只重启现有隔离服务而未迁移或重跑测试；全新浏览器页正常显示带筛选的周课表和既有虚构数据，控制台 0 error、0 warn。
 
 本轮未删除任何测试卷；未提供自动清库操作。无需恢复旧数据即可再次启动这个项目。需要真正删除隔离资源时，应另行确认精确项目与卷名。

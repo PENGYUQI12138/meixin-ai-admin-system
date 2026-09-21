@@ -5,6 +5,10 @@ services:
     image: meixin-admin:m1-frappe16.34.0
   frontend:
     image: meixin-admin:m1-frappe16.34.0
+    command: [/bin/sh, /home/frappe/frappe-bench/apps/meixin_admin/deploy/nginx-entrypoint.sh]
+    environment:
+      SOCKETIO_UPSTREAM_ORIGIN: http://frontend:8080
+      SOCKETIO_UPSTREAM_HOST: frontend:8080
   websocket:
     image: meixin-admin:m1-frappe16.34.0
   queue-short:
@@ -13,4 +17,3 @@ services:
     image: meixin-admin:m1-frappe16.34.0
   scheduler:
     image: meixin-admin:m1-frappe16.34.0
-
