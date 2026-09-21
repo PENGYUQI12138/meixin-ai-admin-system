@@ -1,4 +1,4 @@
-# 美心行政 M1 / M2 开发进度
+# 美心行政 M1 / M2 / M3 开发进度
 
 最后更新：2026-09-21（Asia/Shanghai）
 
@@ -13,6 +13,17 @@ git log --oneline -5
 ```
 
 只从“下一步操作”继续。每完成一个独立阶段，立即更新本文件；重要节点执行 Git commit。不得把未运行的检查记为通过，不得在 `frontend` 运行测试套件。
+
+## M3 当前状态
+
+### 阶段 2：设计与 Private Git 写入验证（进行中）
+
+- M2 final 已完成、正式部署并冻结；本地 `main`、`origin/main` 和 GitHub `main` 均为 `615316ee991a172f198a378b2fa33db2ae60b000`。
+- GitHub 仓库已转为 Private；阶段开始前 `git ls-remote origin refs/heads/main` 成功，Private 读取链路正常。
+- 已从 M2 final 创建独立分支 `m3-enrollment-payment-package`，不 rebase、reset、amend、force push 或改写 M1/M2 历史。
+- M3 采用 `MX Package Plan`、`MX Student Package`、`MX Payment`、`MX Lesson Credit Entry` 四个核心 DocType，以及 `entitlements.py`、`payments.py` 两个服务模块。
+- M3 严格分离现金、课时权益和 M2 课消事实；采用满款一次性授予、退款关闭课包、禁止负余额、精确 Course、FEFO/FIFO、多层幂等和同事务 M2 联动。
+- 完整设计见 `docs/M3_DESIGN.md`。本 checkpoint 只允许设计和状态文档，不新增 schema、不 migrate、不修改容器、不触碰正式站业务数据。
 
 ## M2 当前状态
 
@@ -228,9 +239,10 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 创建 M2 最终冻结 commit，并确认工作区干净。
-2. 停止后续 Git 操作，等待用户确认是否把 `m2-attendance-consumption` 推进到 `main` 和 `origin`。
+1. 完成阶段 2 文档静态检查并创建第一个 M3 checkpoint commit。
+2. 普通执行 `git push -u origin m3-enrollment-payment-package`，验证 Private GitHub 写入链路。
+3. push 成功后进入阶段 3：新增四个 DocType schema、数据库唯一约束、DocPerm/权限 hooks 和两个服务模块骨架，仅在隔离站 migrate。
 
 ## 明确停止范围
 
-M2 只实现确认排课后的执行、考勤和不可变课消决策流水；不进入收费、课包余额、续费、教师工资、财务、微信、支付、AI 自动排课、大型经营报表或家长端。M2 正式部署与冻结验收已完成；未经用户确认不得合并 main、push、rebase、reset、force push 或删除 M2 分支。
+M2 只实现确认排课后的执行、考勤和不可变课消决策流水，已正式部署并冻结。M3 只进入课包、收款、不可变课时权益、M2 同事务扣减、剩余课时和续费；不进入教师工资、总账、会计凭证、支付渠道集成、家长端、发票、CRM、营销、AI 收费或大型经营报表。正式部署前必须重新完整备份并取得用户确认；不得在 `frontend` 运行测试或创建测试业务数据。
