@@ -1,0 +1,197 @@
+{
+ "doctype": "DocType",
+ "name": "MX Payment",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "payment_notice",
+  "student",
+  "student_package",
+  "operation_type",
+  "amount",
+  "cash_effect",
+  "currency",
+  "payment_method",
+  "paid_at",
+  "handled_by",
+  "reversal_of",
+  "reason",
+  "credits_reclaimed",
+  "request_id",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "payment_notice",
+   "fieldtype": "HTML",
+   "label": "付款说明",
+   "options": "<div class=\"alert alert-warning\">M3 的退款操作是“退款关闭课包”：收回全部剩余课时并关闭该包，不支持部分退款后继续使用。</div>"
+  },
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "学生",
+   "options": "MX Student",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "student_package",
+   "fieldtype": "Link",
+   "label": "学生课包",
+   "options": "MX Student Package",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "operation_type",
+   "fieldtype": "Select",
+   "label": "操作类型",
+   "options": "收款\n退款关闭课包\n撤销",
+   "default": "收款",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "金额",
+   "options": "currency",
+   "reqd": 1,
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cash_effect",
+   "fieldtype": "Currency",
+   "label": "现金效果",
+   "options": "currency",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "由服务器根据操作类型推导，正数为收款，负数为退款或反向撤销。"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "币种",
+   "options": "Currency",
+   "default": "CNY",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Select",
+   "label": "支付方式",
+   "options": "现金\n银行转账\n其他",
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "支付时间",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "handled_by",
+   "fieldtype": "Link",
+   "label": "经办人",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Link",
+   "label": "撤销原付款",
+   "options": "MX Payment",
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "原因"
+  },
+  {
+   "fieldname": "credits_reclaimed",
+   "fieldtype": "Int",
+   "label": "退款关闭收回课时",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "系统请求标识",
+   "reqd": 1,
+   "read_only": 1,
+   "hidden": 1,
+   "unique": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅隔离测试填写；真实记录留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "autoname": "MX-PAY-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "student_package",
+ "search_fields": "student,student_package",
+ "show_title_field_in_link": 1,
+ "is_submittable": 1
+}

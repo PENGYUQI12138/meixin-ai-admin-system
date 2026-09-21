@@ -1,0 +1,202 @@
+{
+ "doctype": "DocType",
+ "name": "MX Lesson Credit Entry",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "student",
+  "student_name_snapshot",
+  "student_package",
+  "package_plan",
+  "plan_name_snapshot",
+  "course",
+  "course_name_snapshot",
+  "operation_type",
+  "effect",
+  "source_doctype",
+  "source_name",
+  "m2_consumption_entry",
+  "reversal_of",
+  "reason",
+  "idempotency_key",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "学生",
+   "options": "MX Student",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "student_name_snapshot",
+   "fieldtype": "Data",
+   "label": "学生姓名快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "student_package",
+   "fieldtype": "Link",
+   "label": "学生课包",
+   "options": "MX Student Package",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "package_plan",
+   "fieldtype": "Link",
+   "label": "课包计划",
+   "options": "MX Package Plan",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "plan_name_snapshot",
+   "fieldtype": "Data",
+   "label": "课包名称快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "课程",
+   "options": "MX Course",
+   "reqd": 1,
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "course_name_snapshot",
+   "fieldtype": "Data",
+   "label": "课程名称快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "operation_type",
+   "fieldtype": "Select",
+   "label": "操作类型",
+   "options": "购买授予\n赠送授予\nM2 课消扣减\nM2 reversal 返还\n退款关闭收回\n退款 reversal 恢复\n人工调整",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "effect",
+   "fieldtype": "Int",
+   "label": "课时权益效果",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Link",
+   "label": "来源类型",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "来源单据",
+   "options": "source_doctype",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "m2_consumption_entry",
+   "fieldtype": "Link",
+   "label": "M2 课消流水",
+   "options": "MX Lesson Consumption Entry",
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Link",
+   "label": "反向原权益流水",
+   "options": "MX Lesson Credit Entry",
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "幂等键",
+   "reqd": 1,
+   "read_only": 1,
+   "hidden": 1,
+   "unique": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅隔离测试填写；真实记录留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "autoname": "MX-LCR-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "student_name_snapshot",
+ "search_fields": "student_name_snapshot,student_package,source_name",
+ "show_title_field_in_link": 1
+}

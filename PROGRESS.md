@@ -16,14 +16,26 @@ git log --oneline -5
 
 ## M3 当前状态
 
-### 阶段 2：设计与 Private Git 写入验证（进行中）
+### 阶段 2：设计与 Private Git 写入验证（已完成）
 
 - M2 final 已完成、正式部署并冻结；本地 `main`、`origin/main` 和 GitHub `main` 均为 `615316ee991a172f198a378b2fa33db2ae60b000`。
 - GitHub 仓库已转为 Private；阶段开始前 `git ls-remote origin refs/heads/main` 成功，Private 读取链路正常。
 - 已从 M2 final 创建独立分支 `m3-enrollment-payment-package`，不 rebase、reset、amend、force push 或改写 M1/M2 历史。
 - M3 采用 `MX Package Plan`、`MX Student Package`、`MX Payment`、`MX Lesson Credit Entry` 四个核心 DocType，以及 `entitlements.py`、`payments.py` 两个服务模块。
 - M3 严格分离现金、课时权益和 M2 课消事实；采用满款一次性授予、退款关闭课包、禁止负余额、精确 Course、FEFO/FIFO、多层幂等和同事务 M2 联动。
-- 完整设计见 `docs/M3_DESIGN.md`。本 checkpoint 只允许设计和状态文档，不新增 schema、不 migrate、不修改容器、不触碰正式站业务数据。
+- 完整设计见 `docs/M3_DESIGN.md`。第一个 M3 checkpoint 为 `8d6f346`，只包含设计和状态文档，没有 schema、迁移、容器或正式站业务数据修改。
+- 已普通执行 `git push -u origin m3-enrollment-payment-package`；Private GitHub 首次真实写入成功，远端同名分支已建立并正常跟踪，没有 connection reset 或鉴权错误。
+
+### 阶段 3：Schema、唯一约束与权限骨架（已完成）
+
+- 新增 `MX Package Plan`、`MX Student Package`、`MX Payment`、`MX Lesson Credit Entry` 四个 DocType，以及 `entitlements.py`、`payments.py` 两个最小服务模块骨架。
+- Package Plan 仅 Manager 可维护；Scheduler 可创建普通 Student Package 和普通收款，但不能创建赠送包、退款关闭或撤销；Credit Entry 对两个业务角色均只读。
+- Student Package 和 Payment 的 `request_id`、Credit Entry 的 `idempotency_key`、非空 `m2_consumption_entry`、非空 `reversal_of`，以及 Payment 非空 `reversal_of` 均已通过 DocType `unique` 建立 MariaDB 唯一索引。
+- 系统 request ID 为隐藏只读字段并由服务器生成；课包快照由服务器从 Package Plan 生成；Payment 的学生、币种和 `cash_effect` 由服务器推导，不信任前端输入。
+- 新 DocType 已加入业务角色 gate、permission query hooks 和禁止 DocShare 集合；Credit Entry 控制器拒绝任何直接新增、普通修改和删除。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过。仅对隔离站 `test_meixin_m1.localhost` migrate，成功同步四个 DocType、索引、DocPerm 和 `after_migrate`；正式 `frontend` 未 migrate、未重建、未写入。
+- 隔离 MariaDB 已实际核对全部唯一索引和四个 DocType 的 DocPerm，不只依赖源码声明。
+- 新增 4 项 M3 schema 骨架测试，覆盖产品/购买快照、系统 request ID、Scheduler 越权拒绝、服务器现金效果和 Credit Entry 直接写入拒绝。完整结果为 `Ran 56 tests in 15.535s / OK`：M1 30/30、M2 22/22、M3 4/4。
 
 ## M2 当前状态
 
@@ -239,9 +251,9 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 完成阶段 2 文档静态检查并创建第一个 M3 checkpoint commit。
-2. 普通执行 `git push -u origin m3-enrollment-payment-package`，验证 Private GitHub 写入链路。
-3. push 成功后进入阶段 3：新增四个 DocType schema、数据库唯一约束、DocPerm/权限 hooks 和两个服务模块骨架，仅在隔离站 migrate。
+1. 创建并推送阶段 3 schema checkpoint，确认分支工作区干净。
+2. 进入阶段 4：实现满款激活、付款/退款关闭/reversal、不可变课时权益流水、FEFO/FIFO 选择和 M2 窄事务联动。
+3. 扩充 M3 功能、失败回滚、权限和并发测试；所有写入仍只在隔离站执行。
 
 ## 明确停止范围
 

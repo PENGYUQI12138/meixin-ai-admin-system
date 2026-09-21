@@ -4,7 +4,8 @@ from frappe.utils import get_system_timezone
 
 DOCTYPES = ["MX Student", "MX Teacher", "MX Course", "MX Room", "MX Session",
             "MX Session Student", "MX Session Execution", "MX Session Attendance",
-            "MX Lesson Consumption Entry", "MX Settings"]
+            "MX Lesson Consumption Entry", "MX Settings", "MX Package Plan",
+            "MX Student Package", "MX Payment", "MX Lesson Credit Entry"]
 
 
 def before_install():
@@ -32,6 +33,12 @@ def after_migrate():
     frappe.db.add_index("MX Session Execution", ["session", "docstatus"], "mx_session_execution")
     frappe.db.add_index("MX Session Attendance", ["student", "parent"], "mx_student_execution")
     frappe.db.add_index("MX Lesson Consumption Entry", ["session", "student"], "mx_session_student_consumption")
+    frappe.db.add_index("MX Package Plan", ["course", "enabled"], "mx_package_plan_course")
+    frappe.db.add_index("MX Student Package", ["student", "course", "docstatus"], "mx_student_course_package")
+    frappe.db.add_index("MX Student Package", ["effective_from", "expires_on"], "mx_package_validity")
+    frappe.db.add_index("MX Payment", ["student_package", "docstatus"], "mx_package_payment")
+    frappe.db.add_index("MX Lesson Credit Entry", ["student_package", "creation"], "mx_package_credit")
+    frappe.db.add_index("MX Lesson Credit Entry", ["student", "course"], "mx_student_course_credit")
     align_business_user_timezones()
 
 

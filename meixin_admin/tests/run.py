@@ -32,6 +32,7 @@ def run():
         suite = unittest.TestSuite([
             unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m1"),
             unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m2"),
+            unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m3"),
         ])
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         if not result.wasSuccessful():

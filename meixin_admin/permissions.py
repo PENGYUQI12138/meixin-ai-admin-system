@@ -2,7 +2,7 @@
 import frappe
 
 BUSINESS_ROLES = {"Meixin Manager", "Meixin Scheduler"}
-PROTECTED_LEDGER = "MX Lesson Consumption Entry"
+PROTECTED_LEDGERS = {"MX Lesson Consumption Entry", "MX Lesson Credit Entry"}
 
 
 def is_manager(user=None):
@@ -32,7 +32,7 @@ def has_permission(doc, ptype, user=None, **kwargs):
         return False
     if doc.doctype == "MX Settings":
         return is_manager(user)
-    if doc.doctype == PROTECTED_LEDGER and ptype not in {"read", "select", "report"}:
+    if doc.doctype in PROTECTED_LEDGERS and ptype not in {"read", "select", "report"}:
         return False
     if doc.doctype == "MX Session Execution" and ptype == "amend":
         return is_manager(user)
@@ -50,5 +50,7 @@ def prevent_mx_share(doc, method=None):
     # denial; M1 grants access only via its business roles, not ad-hoc shares.
     if doc.share_doctype in {"MX Student", "MX Teacher", "MX Course", "MX Room",
                              "MX Session", "MX Session Student", "MX Session Execution",
-                             "MX Session Attendance", "MX Lesson Consumption Entry", "MX Settings"}:
+                             "MX Session Attendance", "MX Lesson Consumption Entry", "MX Settings",
+                             "MX Package Plan", "MX Student Package", "MX Payment",
+                             "MX Lesson Credit Entry"}:
         frappe.throw("美心数据不支持单独分享，请由系统管理员按需分配美心业务角色。", frappe.PermissionError)
