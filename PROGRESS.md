@@ -1,4 +1,4 @@
-# 美心行政 M1 开发进度
+# 美心行政 M1 / M2 开发进度
 
 最后更新：2026-09-21（Asia/Shanghai）
 
@@ -13,6 +13,16 @@ git log --oneline -5
 ```
 
 只从“下一步操作”继续。每完成一个独立阶段，立即更新本文件；重要节点执行 Git commit。不得把未运行的检查记为通过，不得在 `frontend` 运行测试套件。
+
+## M2 当前状态
+
+### 阶段 1：设计与分支基线（已完成）
+
+- M1 冻结基线、本地 `origin/main` 与 GitHub `origin/main` 均为 `29d622e3e2b946170aa36fe51fbebeb5f2bf3719`，开始前工作区干净。
+- 已从该提交创建独立分支 `m2-attendance-consumption`；不改写、rebase、reset、amend 或 force push M1 历史。
+- M2 采用 `MX Session → MX Session Execution → MX Session Attendance → MX Lesson Consumption Entry` 分层，不在已提交排课中加入考勤字段。
+- 设计采用五项三态课消规则、不可变且数据库幂等的 `+1/0/-1` 流水、Manager 专属纠错、Scheduler 正常时间提交、Manager 有原因提前完成。
+- 完整设计见 `docs/M2_DESIGN.md`。本阶段没有迁移数据库、修改容器或触碰正式站点业务数据。
 
 ## 已完成内容
 
