@@ -22,6 +22,7 @@ def main():
             "submit": "MX Session", "teacher": "MX Teacher", "room": "MX Room",
             "execution_submit": "MX Session Execution", "session_cancel": "MX Session",
             "settings": "MX Settings", "payment_submit": "MX Payment",
+            "credit_adjust": "MX Student Package",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
@@ -37,6 +38,12 @@ def main():
         try:
             if config["operation"] in {"submit", "execution_submit", "payment_submit"}:
                 doc.submit()
+            elif config["operation"] == "credit_adjust":
+                from meixin_admin.entitlements import adjust_credits
+
+                doc.name = adjust_credits(
+                    doc.name, config["field"], "并发人工调整测试", config["value"],
+                )
             elif config["operation"] == "session_cancel":
                 doc.cancel()
             elif config["operation"] == "settings":

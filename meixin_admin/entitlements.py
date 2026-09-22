@@ -1,10 +1,13 @@
 """M3 lesson-credit ledger primitives shared by package and M2 services."""
 from contextlib import contextmanager
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 import frappe
 from frappe.utils import cint, get_datetime, getdate, now_datetime
+
+from meixin_admin.permissions import require_manager
+from meixin_admin.scheduling import schedule_write
 
 CREDIT_ENTRY_DOCTYPE = "MX Lesson Credit Entry"
 
@@ -129,22 +132,11 @@ def _locked_package_state(package):
         "refund_closed": False,
     }
     if package.acquisition_type == "购买":
-        payments = frappe.db.sql(
-            """SELECT name, operation_type, cash_effect, reversal_of
-               FROM `tabMX Payment`
-               WHERE student_package=%s AND docstatus=1
-               ORDER BY creation, name FOR UPDATE""",
-            (package.name,), as_dict=True,
-        )
-        state["net_paid"] = sum((Decimal(str(row.cash_effect or 0)) for row in payments), Decimal("0"))
-        reversed_payments = {
-            row.reversal_of for row in payments
-            if row.operation_type == "撤销" and row.reversal_of
-        }
-        state["refund_closed"] = any(
-            row.operation_type == "退款关闭课包" and row.name not in reversed_payments
-            for row in payments
-        )
+        from meixin_admin.payments import locked_payment_state
+
+        payment_state = locked_payment_state(package.name)
+        state["net_paid"] = payment_state["net_paid"]
+        state["refund_closed"] = bool(payment_state["active_refund"])
     return state
 
 
@@ -297,3 +289,138 @@ def restore_m2_entry(original, reversal):
         "demo_batch": debit.demo_batch,
     }
     return insert_credit_idempotent(values)
+
+
+def reclaim_refund_credits(package, payment):
+    """Snapshot and reclaim all remaining credit for one refund-close Payment."""
+    balance = locked_credit_balance(package.name)
+    if balance < 0:
+        frappe.throw("课包权益余额异常，已停止退款关闭；请由 Manager 检查历史流水。")
+    payment.credits_reclaimed = balance
+    if balance == 0:
+        return None
+    values = {
+        "doctype": CREDIT_ENTRY_DOCTYPE,
+        "student": package.student,
+        "student_name_snapshot": frappe.db.get_value("MX Student", package.student, "student_name"),
+        "student_package": package.name,
+        "package_plan": package.package_plan,
+        "plan_name_snapshot": package.plan_name_snapshot,
+        "course": package.course,
+        "course_name_snapshot": package.course_name_snapshot,
+        "operation_type": "退款收回",
+        "effect": -balance,
+        "source_doctype": "MX Payment",
+        "source_name": payment.name,
+        "reason": payment.reason,
+        "idempotency_key": f"payment-refund-reclaim:{payment.name}",
+        "demo_batch": package.demo_batch,
+    }
+    return insert_credit_idempotent(values)
+
+
+def restore_refund_credits(original_refund, reversal):
+    """Restore exactly the credit snapshot reclaimed by the original refund."""
+    reclaimed = cint(original_refund.credits_reclaimed)
+    if reclaimed < 0:
+        frappe.throw("原退款的权益收回快照异常，已停止撤销。")
+    reclaim_name = frappe.db.get_value(
+        CREDIT_ENTRY_DOCTYPE,
+        {"source_doctype": "MX Payment", "source_name": original_refund.name,
+         "operation_type": "退款收回"},
+        "name",
+    )
+    if reclaimed == 0:
+        if reclaim_name:
+            frappe.throw("原退款的权益收回快照与流水不一致，已停止撤销。")
+        return None
+    if not reclaim_name:
+        frappe.throw("原退款缺少权益收回流水，已停止撤销。")
+    reclaim = frappe.get_doc(CREDIT_ENTRY_DOCTYPE, reclaim_name)
+    if cint(reclaim.effect) != -reclaimed or reclaim.student_package != original_refund.student_package:
+        frappe.throw("原退款的权益收回快照与流水不一致，已停止撤销。")
+    values = {
+        "doctype": CREDIT_ENTRY_DOCTYPE,
+        "student": reclaim.student,
+        "student_name_snapshot": reclaim.student_name_snapshot,
+        "student_package": reclaim.student_package,
+        "package_plan": reclaim.package_plan,
+        "plan_name_snapshot": reclaim.plan_name_snapshot,
+        "course": reclaim.course,
+        "course_name_snapshot": reclaim.course_name_snapshot,
+        "operation_type": "退款 reversal 恢复",
+        "effect": reclaimed,
+        "source_doctype": "MX Payment",
+        "source_name": reversal.name,
+        "reversal_of": reclaim.name,
+        "reason": reversal.reason,
+        "idempotency_key": f"payment-reversal-restore:{reversal.name}",
+        "demo_batch": reclaim.demo_batch,
+    }
+    return insert_credit_idempotent(values)
+
+
+def _integer_effect(value):
+    try:
+        parsed = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        frappe.throw("人工调整课时必须是非零整数。")
+    if not parsed.is_finite() or parsed != parsed.to_integral_value() or parsed == 0:
+        frappe.throw("人工调整课时必须是非零整数。")
+    return int(parsed)
+
+
+@frappe.whitelist()
+def adjust_credits(student_package, effect, reason, request_id):
+    require_manager()
+    effect = _integer_effect(effect)
+    reason = (reason or "").strip()
+    request_id = (request_id or "").strip()
+    if not reason:
+        frappe.throw("人工课时调整必须填写原因。")
+    if not request_id or len(request_id) > 120:
+        frappe.throw("系统请求标识格式不正确。")
+    with schedule_write():
+        rows = frappe.db.sql(
+            "SELECT name FROM `tabMX Student Package` WHERE name=%s FOR UPDATE",
+            (student_package,), as_dict=True,
+        )
+        if not rows:
+            frappe.throw("学生课包不存在。")
+        package = frappe.get_doc("MX Student Package", student_package)
+        package.check_permission("read")
+        if package.docstatus != 1:
+            frappe.throw("只能调整已提交的学生课包。")
+        values = {
+            "doctype": CREDIT_ENTRY_DOCTYPE,
+            "student": package.student,
+            "student_name_snapshot": frappe.db.get_value("MX Student", package.student, "student_name"),
+            "student_package": package.name,
+            "package_plan": package.package_plan,
+            "plan_name_snapshot": package.plan_name_snapshot,
+            "course": package.course,
+            "course_name_snapshot": package.course_name_snapshot,
+            "operation_type": "人工调整",
+            "effect": effect,
+            "source_doctype": "MX Student Package",
+            "source_name": package.name,
+            "reason": reason,
+            "idempotency_key": f"manual-adjustment:{request_id}",
+            "demo_batch": package.demo_batch,
+        }
+        existing_name = frappe.db.get_value(
+            CREDIT_ENTRY_DOCTYPE, {"idempotency_key": values["idempotency_key"]}
+        )
+        if existing_name:
+            existing = frappe.get_doc(CREDIT_ENTRY_DOCTYPE, existing_name)
+            if not _same_credit(existing, values):
+                frappe.throw("相同请求标识包含不同调整内容，已停止写入。", title="权益调整幂等冲突")
+            return existing.name
+        state = _locked_package_state(package)
+        if state["refund_closed"]:
+            frappe.throw("已退款关闭的课包不能人工调整；如退款有误，请撤销原退款。")
+        if not state["has_grant"] or not package.activated_at:
+            frappe.throw("课包尚未产生合法初始权益，不能人工调整。")
+        if state["balance"] + effect < 0:
+            frappe.throw("人工负调整会导致课时权益余额小于 0，已停止写入。")
+        return insert_credit_idempotent(values).name

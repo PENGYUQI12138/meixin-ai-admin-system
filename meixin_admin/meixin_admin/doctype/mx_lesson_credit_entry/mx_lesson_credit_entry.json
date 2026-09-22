@@ -85,7 +85,7 @@
    "fieldname": "operation_type",
    "fieldtype": "Select",
    "label": "操作类型",
-   "options": "购买授予\n赠送授予\nM2 课消扣减\nM2 reversal 返还\n退款关闭收回\n退款 reversal 恢复\n人工调整",
+   "options": "购买授予\n赠送授予\nM2 课消扣减\nM2 reversal 返还\n退款收回\n退款 reversal 恢复\n人工调整",
    "reqd": 1,
    "read_only": 1,
    "in_list_view": 1,

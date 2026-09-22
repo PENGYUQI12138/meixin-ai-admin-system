@@ -16,6 +16,7 @@ from frappe.utils import add_days, now_datetime, nowdate
 
 from meixin_admin import consumption
 from meixin_admin import entitlements
+from meixin_admin import payments
 from meixin_admin.tests.run import assert_isolated_site
 
 
@@ -95,11 +96,11 @@ class TestM3Schema(unittest.TestCase):
             "demo_batch": self.batch,
         }).insert()
 
-    def user(self, role):
+    def user(self, role=None, user_type="System User"):
         return frappe.get_doc({
             "doctype": "User", "email": f"mx-m3-{uuid.uuid4().hex[:16]}@example.invalid",
             "first_name": "M3隔离用户", "enabled": 1, "send_welcome_email": 0,
-            "user_type": "System User", "roles": [{"role": role}],
+            "user_type": user_type, "roles": [{"role": role}] if role else [],
         }).insert().name
 
     def payment(self, package, amount, *, request_id=None, paid_at=None):
@@ -151,6 +152,28 @@ class TestM3Schema(unittest.TestCase):
         frappe.db.set_value("MX Payment", payment.name, "docstatus", 1, update_modified=False)
         payment.docstatus = 1
         return payment
+
+    def correction_payment(self, package, operation_type, amount, *, reversal_of=None, request_id=None):
+        return frappe.get_doc({
+            "doctype": "MX Payment", "student_package": package.name,
+            "operation_type": operation_type, "amount": amount, "currency": "CNY",
+            "payment_method": "其他", "paid_at": now_datetime(),
+            "reversal_of": reversal_of, "reason": "M3 4D 隔离测试",
+            "request_id": request_id, "demo_batch": self.batch,
+        }).insert()
+
+    def refund_close(self, package, amount=None, *, request_id=None):
+        name = payments.refund_close_package(
+            package.name, amount or package.deal_amount, "M3 4D 退款关闭测试",
+            request_id or uuid.uuid4().hex,
+        )
+        return frappe.get_doc("MX Payment", name)
+
+    def reverse(self, payment, *, request_id=None):
+        name = payments.reverse_payment(
+            payment.name, "M3 4D 撤销测试", request_id or uuid.uuid4().hex,
+        )
+        return frappe.get_doc("MX Payment", name)
 
     def debited_package(self, execution):
         decision = frappe.db.get_value(
@@ -284,7 +307,7 @@ class TestM3Schema(unittest.TestCase):
         self.assertTrue(package.activated_at)
         self.assertEqual([(row.operation_type, row.effect) for row in entries], [("赠送授予", 20)])
 
-    def worker(self, name, *, operation="payment_submit", hold=False):
+    def worker(self, name, *, operation="payment_submit", hold=False, field=None, value=None):
         process = subprocess.Popen(
             [sys.executable, "-m", "meixin_admin.tests.concurrent_worker"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -298,7 +321,7 @@ class TestM3Schema(unittest.TestCase):
         process.stdin.write(json.dumps({
             "site": frappe.local.site, "sites_path": os.path.abspath(frappe.local.sites_path),
             "operation": operation, "name": name, "hold": hold,
-            "field": None, "value": None,
+            "field": field, "value": value,
         }) + "\n")
         process.stdin.flush()
         return process, output
@@ -316,6 +339,25 @@ class TestM3Schema(unittest.TestCase):
             if line.startswith(expected):
                 return line
         self.fail(f"等待并发进程 {expected} 超时。")
+
+    def concurrent_pair(self, first, second):
+        self.read_worker(first, "LOCKED")
+        self.read_worker(second, "READY")
+        second[0].stdin.write("GO\n")
+        second[0].stdin.flush()
+        self.read_worker(second, "ATTEMPT")
+        time.sleep(0.5)
+        self.assertIsNone(second[0].poll())
+        first[0].stdin.write("GO\n")
+        first[0].stdin.flush()
+        results = [
+            json.loads(self.read_worker(worker, "RESULT ").removeprefix("RESULT "))
+            for worker in (first, second)
+        ]
+        for worker in (first, second):
+            worker[0].wait(timeout=10)
+        frappe.db.rollback()
+        return results
 
     def test_11_concurrent_partial_payments_fail_stale_request_then_grant_once_on_retry(self):
         package = self.package().submit()
@@ -748,6 +790,440 @@ class TestM3Schema(unittest.TestCase):
         self.assertIn("元数据异常", self.rejected(execution.submit))
         self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
         self.assertEqual(entitlements.locked_credit_balance(package.name), 20)
+
+    def test_40_receipt_reversal_freezes_then_supplement_restores_without_new_grant(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        self.set_rule("课消")
+        self.execution(session=self.session(start=now_datetime() + timedelta(hours=1))).submit()
+        reversal = self.reverse(receipt)
+        self.assertEqual(reversal.cash_effect, -receipt.cash_effect)
+        self.assertEqual(reversal.reversal_of, receipt.name)
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
+        blocked = self.execution(session=self.session(start=now_datetime() + timedelta(hours=3)))
+        self.assertIn("欠费冻结", self.rejected(blocked.submit))
+        self.payment(package, package.deal_amount).submit()
+        blocked.reload().submit()
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 18)
+        self.assertEqual(
+            frappe.db.count(
+                "MX Lesson Credit Entry",
+                {"student_package": package.name, "operation_type": "购买授予"},
+            ),
+            1,
+        )
+        receipt.reload()
+        self.assertEqual(receipt.cash_effect, package.deal_amount)
+        receipt.amount = 1
+        self.rejected(receipt.save)
+        self.rejected(receipt.cancel)
+        self.rejected(lambda: frappe.delete_doc("MX Payment", receipt.name))
+
+    def test_41_payment_reversal_is_idempotent_and_unique(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        request_id = uuid.uuid4().hex
+        first = payments.reverse_payment(receipt.name, "重复撤销测试", request_id)
+        second = payments.reverse_payment(receipt.name, "重复撤销测试", request_id)
+        self.assertEqual(first, second)
+        self.assertIn(
+            "撤销",
+            self.rejected(lambda: payments.reverse_payment(
+                receipt.name, "第二条撤销", uuid.uuid4().hex,
+            )),
+        )
+        self.assertEqual(frappe.db.count("MX Payment", {"reversal_of": receipt.name}), 1)
+
+    def test_42_correction_apis_require_manager(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        for user in (
+            self.user("Meixin Scheduler"), self.user("System Manager"), self.user(),
+            self.user(user_type="Website User"), "Guest",
+        ):
+            frappe.set_user(user)
+            self.rejected(
+                lambda: payments.reverse_payment(receipt.name, "越权撤销", uuid.uuid4().hex),
+                frappe.PermissionError,
+            )
+            self.rejected(
+                lambda: payments.refund_close_package(
+                    package.name, 100, "越权退款", uuid.uuid4().hex,
+                ),
+                frappe.PermissionError,
+            )
+            self.rejected(
+                lambda: entitlements.adjust_credits(
+                    package.name, 1, "越权调整", uuid.uuid4().hex,
+                ),
+                frappe.PermissionError,
+            )
+        frappe.set_user("Administrator")
+        scheduler = self.user("Meixin Scheduler")
+        frappe.set_user(scheduler)
+        self.rejected(
+            lambda: self.correction_payment(package, "退款关闭课包", 100),
+            frappe.PermissionError,
+        )
+
+    def test_43_refund_close_reclaims_all_remaining_credit(self):
+        package = self.purchase_and_activate()
+        self.set_rule("课消")
+        self.execution().submit()
+        refund = self.refund_close(package, 1000)
+        reclaim = frappe.get_doc(
+            "MX Lesson Credit Entry",
+            {"source_doctype": "MX Payment", "source_name": refund.name, "operation_type": "退款收回"},
+        )
+        self.assertEqual((refund.cash_effect, refund.credits_reclaimed), (-1000, 19))
+        self.assertEqual((reclaim.effect, reclaim.student_package), (-19, package.name))
+        self.assertEqual(reclaim.idempotency_key, f"payment-refund-reclaim:{refund.name}")
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 0)
+        self.assertEqual(
+            frappe.db.count(
+                "MX Lesson Credit Entry", {"student_package": package.name, "operation_type": "M2 课消扣减"}
+            ),
+            1,
+        )
+
+    def test_44_refund_amount_bounds_are_atomic(self):
+        package = self.purchase_and_activate()
+        before = frappe.db.count("MX Payment", {"student_package": package.name})
+        for amount in (0, -1, 2001, "NaN", "Infinity"):
+            self.rejected(lambda amount=amount: payments.refund_close_package(
+                package.name, amount, "非法退款金额", uuid.uuid4().hex,
+            ))
+        self.assertEqual(frappe.db.count("MX Payment", {"student_package": package.name}), before)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款收回"}), 0)
+
+    def test_45_exhausted_package_can_refund_close_without_zero_credit_entry(self):
+        plan = self.new_plan(credits=1, price=100)
+        package = self.purchase_and_activate(plan=plan)
+        self.set_rule("课消")
+        self.execution().submit()
+        refund = self.refund_close(package, 100)
+        self.assertEqual(refund.credits_reclaimed, 0)
+        self.assertEqual(
+            frappe.db.count(
+                "MX Lesson Credit Entry", {"source_doctype": "MX Payment", "source_name": refund.name}
+            ),
+            0,
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 0)
+
+    def test_46_refund_close_blocks_repeat_receipt_and_consumption(self):
+        package = self.purchase_and_activate()
+        self.refund_close(package, 1000)
+        self.assertIn("重复退款", self.rejected(lambda: self.refund_close(package, 100)))
+        self.assertIn("退款关闭", self.rejected(lambda: self.payment(package, 100).submit()))
+        self.set_rule("课消")
+        self.assertIn("退款关闭", self.rejected(self.execution().submit))
+
+    def test_47_refund_reversal_restores_exact_reclaimed_snapshot(self):
+        package = self.purchase_and_activate()
+        self.set_rule("课消")
+        self.execution(session=self.session(start=now_datetime() + timedelta(hours=1))).submit()
+        refund = self.refund_close(package, 1000)
+        reclaim = frappe.get_doc(
+            "MX Lesson Credit Entry", {"source_name": refund.name, "operation_type": "退款收回"}
+        )
+        reversal = self.reverse(refund)
+        restore = frappe.get_doc(
+            "MX Lesson Credit Entry", {"source_name": reversal.name, "operation_type": "退款 reversal 恢复"}
+        )
+        self.assertEqual(reversal.cash_effect, 1000)
+        self.assertEqual((restore.effect, restore.reversal_of), (19, reclaim.name))
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
+        self.execution(session=self.session(start=now_datetime() + timedelta(hours=3))).submit()
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 18)
+
+    def test_48_refund_reversal_is_idempotent_and_zero_snapshot_stays_zero(self):
+        plan = self.new_plan(credits=1, price=100)
+        package = self.purchase_and_activate(plan=plan)
+        self.set_rule("课消")
+        self.execution().submit()
+        refund = self.refund_close(package, 100)
+        request_id = uuid.uuid4().hex
+        first = payments.reverse_payment(refund.name, "退款撤销幂等", request_id)
+        second = payments.reverse_payment(refund.name, "退款撤销幂等", request_id)
+        self.assertEqual(first, second)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款 reversal 恢复"}), 0
+        )
+        self.assertIn(
+            "撤销",
+            self.rejected(lambda: payments.reverse_payment(
+                refund.name, "重复退款撤销", uuid.uuid4().hex,
+            )),
+        )
+
+    def test_49_manual_positive_adjustment_is_audited_and_idempotent(self):
+        package = self.package("赠送").submit()
+        request_id = uuid.uuid4().hex
+        first = entitlements.adjust_credits(package.name, 3, "竞赛奖励", request_id)
+        second = entitlements.adjust_credits(package.name, "3", "竞赛奖励", request_id)
+        self.assertEqual(first, second)
+        entry = frappe.get_doc("MX Lesson Credit Entry", first)
+        self.assertEqual((entry.operation_type, entry.effect, entry.reason), ("人工调整", 3, "竞赛奖励"))
+        self.assertEqual(entry.owner, "Administrator")
+        self.assertEqual(entry.idempotency_key, f"manual-adjustment:{request_id}")
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 23)
+
+    def test_50_manual_negative_adjustment_can_reach_zero_but_not_below(self):
+        package = self.package("赠送", plan=self.new_plan(credits=2, price=100)).submit()
+        entitlements.adjust_credits(package.name, -2, "清零纠正", uuid.uuid4().hex)
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 0)
+        self.assertIn("小于 0", self.rejected(lambda: entitlements.adjust_credits(
+            package.name, -1, "不得负数", uuid.uuid4().hex,
+        )))
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"operation_type": "人工调整"}), 1
+        )
+
+    def test_51_manual_adjustment_validates_integer_reason_and_idempotent_content(self):
+        package = self.package("赠送").submit()
+        for effect, reason in ((0, "零"), ("1.5", "小数"), (1, "   ")):
+            self.rejected(lambda effect=effect, reason=reason: entitlements.adjust_credits(
+                package.name, effect, reason, uuid.uuid4().hex,
+            ))
+        request_id = uuid.uuid4().hex
+        entitlements.adjust_credits(package.name, 1, "原内容", request_id)
+        self.assertIn("不同调整内容", self.rejected(lambda: entitlements.adjust_credits(
+            package.name, 2, "不同内容", request_id,
+        )))
+
+    def test_52_refund_closed_package_rejects_manual_adjustment(self):
+        package = self.purchase_and_activate()
+        self.refund_close(package, 1000)
+        self.assertIn("已退款关闭", self.rejected(lambda: entitlements.adjust_credits(
+            package.name, 1, "试图恢复", uuid.uuid4().hex,
+        )))
+
+    def test_53_correction_apis_respect_user_permission_and_reject_docshare(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        manager = self.user("Meixin Manager")
+        other_student = frappe.get_doc({
+            "doctype": "MX Student", "student_name": "M3虚构其他学生",
+            "guardian_phone": "00000000001", "enabled": 1, "demo_batch": self.batch,
+        }).insert()
+        frappe.get_doc({
+            "doctype": "User Permission", "user": manager, "allow": "MX Student",
+            "for_value": other_student.name, "apply_to_all_doctypes": 1,
+        }).insert(ignore_permissions=True)
+        frappe.set_user(manager)
+        self.rejected(
+            lambda: payments.reverse_payment(receipt.name, "受限用户撤销", uuid.uuid4().hex),
+            frappe.PermissionError,
+        )
+        self.rejected(
+            lambda: payments.refund_close_package(
+                package.name, 100, "受限用户退款", uuid.uuid4().hex,
+            ),
+            frappe.PermissionError,
+        )
+        self.rejected(
+            lambda: entitlements.adjust_credits(
+                package.name, 1, "受限用户调整", uuid.uuid4().hex,
+            ),
+            frappe.PermissionError,
+        )
+        frappe.set_user("Administrator")
+        outsider = self.user("System Manager")
+        self.rejected(lambda: frappe.get_doc({
+            "doctype": "DocShare", "share_doctype": "MX Student Package",
+            "share_name": package.name, "user": outsider, "read": 1,
+        }).insert(), frappe.PermissionError)
+
+    def test_54_payment_reversal_failure_rolls_back_then_retry_succeeds_once(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        request_id = uuid.uuid4().hex
+        real_finalize = payments._finalize_reversal
+
+        def fail_after_finalize(payment, locked_package, state):
+            real_finalize(payment, locked_package, state)
+            raise frappe.ValidationError("注入撤销后续失败")
+
+        with patch("meixin_admin.payments._finalize_reversal", side_effect=fail_after_finalize):
+            self.rejected(lambda: payments.reverse_payment(
+                receipt.name, "故障撤销", request_id,
+            ))
+        self.assertEqual(frappe.db.count("MX Payment", {"reversal_of": receipt.name}), 0)
+        payments.reverse_payment(receipt.name, "故障撤销", request_id)
+        self.assertEqual(frappe.db.count("MX Payment", {"reversal_of": receipt.name}), 1)
+
+    def test_55_refund_failures_rollback_payment_and_reclaim_then_retry_once(self):
+        package = self.purchase_and_activate()
+        request_id = uuid.uuid4().hex
+        with patch(
+            "meixin_admin.entitlements.reclaim_refund_credits",
+            side_effect=frappe.ValidationError("注入收回前失败"),
+        ):
+            self.rejected(lambda: payments.refund_close_package(
+                package.name, 1000, "故障退款", request_id,
+            ))
+        self.assertEqual(frappe.db.count("MX Payment", {"operation_type": "退款关闭课包"}), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款收回"}), 0)
+
+        real_reclaim = entitlements.reclaim_refund_credits
+
+        def fail_after_reclaim(locked_package, payment):
+            real_reclaim(locked_package, payment)
+            raise frappe.ValidationError("注入收回后失败")
+
+        with patch("meixin_admin.entitlements.reclaim_refund_credits", side_effect=fail_after_reclaim):
+            self.rejected(lambda: payments.refund_close_package(
+                package.name, 1000, "故障退款", request_id,
+            ))
+        self.assertEqual(frappe.db.count("MX Payment", {"operation_type": "退款关闭课包"}), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款收回"}), 0)
+        refund_name = payments.refund_close_package(package.name, 1000, "故障退款", request_id)
+        self.assertEqual(frappe.db.count("MX Payment", {"name": refund_name}), 1)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款收回"}), 1)
+
+    def test_56_refund_reversal_restore_failure_rolls_back_then_retry_once(self):
+        package = self.purchase_and_activate()
+        refund = self.refund_close(package, 1000)
+        request_id = uuid.uuid4().hex
+        with patch(
+            "meixin_admin.entitlements.restore_refund_credits",
+            side_effect=frappe.ValidationError("注入退款恢复失败"),
+        ):
+            self.rejected(lambda: payments.reverse_payment(
+                refund.name, "故障退款撤销", request_id,
+            ))
+        self.assertEqual(frappe.db.count("MX Payment", {"reversal_of": refund.name}), 0)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款 reversal 恢复"}), 0,
+        )
+        payments.reverse_payment(refund.name, "故障退款撤销", request_id)
+        self.assertEqual(frappe.db.count("MX Payment", {"reversal_of": refund.name}), 1)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款 reversal 恢复"}), 1,
+        )
+
+    def test_57_manual_adjustment_insert_failure_rolls_back_then_retry_once(self):
+        package = self.package("赠送").submit()
+        request_id = uuid.uuid4().hex
+        with patch(
+            "meixin_admin.entitlements.insert_credit_idempotent",
+            side_effect=frappe.ValidationError("注入人工调整写入失败"),
+        ):
+            self.rejected(lambda: entitlements.adjust_credits(
+                package.name, 2, "故障后重试", request_id,
+            ))
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"idempotency_key": f"manual-adjustment:{request_id}"}),
+            0,
+        )
+        entitlements.adjust_credits(package.name, 2, "故障后重试", request_id)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"idempotency_key": f"manual-adjustment:{request_id}"}),
+            1,
+        )
+
+    def test_58_concurrent_refund_wins_over_new_consumption_atomically(self):
+        package = self.purchase_and_activate()
+        self.set_rule("课消")
+        refund = self.correction_payment(package, "退款关闭课包", 1000)
+        execution = self.execution()
+        frappe.db.commit()
+        self.committed = True
+        results = self.concurrent_pair(
+            self.worker(refund.name, hold=True),
+            self.worker(execution.name, operation="execution_submit"),
+        )
+        self.assertEqual([row["ok"] for row in results], [True, False], results)
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款收回"}), 1)
+
+    def test_59_concurrent_reversal_and_supplement_keep_net_and_single_grant(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        reversal = self.correction_payment(
+            package, "撤销", receipt.amount, reversal_of=receipt.name,
+        )
+        supplement = self.payment(package, package.deal_amount)
+        frappe.db.commit()
+        self.committed = True
+        results = self.concurrent_pair(
+            self.worker(reversal.name, hold=True), self.worker(supplement.name),
+        )
+        self.assertEqual([row["ok"] for row in results], [True, False], results)
+        frappe.get_doc("MX Payment", supplement.name).submit()
+        self.assertEqual(payments.locked_net_paid(package.name), package.deal_amount)
+        self.assertEqual(
+            frappe.db.count(
+                "MX Lesson Credit Entry",
+                {"student_package": package.name, "operation_type": "购买授予"},
+            ),
+            1,
+        )
+
+    def test_60_concurrent_double_refund_allows_only_one_close(self):
+        package = self.purchase_and_activate()
+        refunds = [self.correction_payment(package, "退款关闭课包", 1000) for _ in range(2)]
+        frappe.db.commit()
+        self.committed = True
+        results = self.concurrent_pair(
+            self.worker(refunds[0].name, hold=True), self.worker(refunds[1].name),
+        )
+        self.assertEqual([row["ok"] for row in results], [True, False], results)
+        self.assertEqual(
+            frappe.db.count(
+                "MX Payment", {"student_package": package.name, "operation_type": "退款关闭课包", "docstatus": 1},
+            ),
+            1,
+        )
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 0)
+
+    def test_61_concurrent_negative_adjustments_cannot_overdraw(self):
+        package = self.package("赠送", plan=self.new_plan(credits=1, price=100)).submit()
+        frappe.db.commit()
+        self.committed = True
+        results = self.concurrent_pair(
+            self.worker(
+                package.name, operation="credit_adjust", hold=True,
+                field=-1, value=uuid.uuid4().hex,
+            ),
+            self.worker(
+                package.name, operation="credit_adjust",
+                field=-1, value=uuid.uuid4().hex,
+            ),
+        )
+        self.assertEqual([row["ok"] for row in results], [True, False], results)
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 0)
+        self.assertEqual(
+            frappe.db.count(
+                "MX Lesson Credit Entry",
+                {"student_package": package.name, "operation_type": "人工调整"},
+            ),
+            1,
+        )
+
+    def test_62_concurrent_refund_reversal_then_consumption_is_one_legal_order(self):
+        package = self.purchase_and_activate()
+        refund = self.refund_close(package, 1000)
+        reversal = self.correction_payment(
+            package, "撤销", refund.amount, reversal_of=refund.name,
+        )
+        self.set_rule("课消")
+        execution = self.execution()
+        frappe.db.commit()
+        self.committed = True
+        results = self.concurrent_pair(
+            self.worker(reversal.name, hold=True),
+            self.worker(execution.name, operation="execution_submit"),
+        )
+        self.assertEqual([row["ok"] for row in results], [True, False], results)
+        frappe.get_doc("MX Session Execution", execution.name).submit()
+        self.assertEqual(entitlements.locked_credit_balance(package.name), 19)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款 reversal 恢复"}), 1,
+        )
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 1)
 
 
 if __name__ == "__main__":

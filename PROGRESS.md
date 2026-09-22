@@ -41,7 +41,7 @@ git log --oneline -5
 
 - 购买型 Student Package 提交后不授予权益；普通收款支持一次付清和分次付款，锁内按 Decimal 重新汇总已提交 `cash_effect`，拒绝超额和负净付款。
 - 净收款第一次恰好达到成交金额时，通过唯一 `package-grant:<student-package>` 幂等键生成完整 `+N` Credit Entry，并只写一次 `activated_at`；分次付款、双击和 API 重试不会重复 grant。
-- 赠送包继续只允许 Manager，提交时在同一事务直接生成唯一权益；阶段 4D 尚未实现的付款撤销和退款关闭在 `before_submit` 明确拒绝，避免提前暴露不完整资金流程。
+- 赠送包继续只允许 Manager，提交时在同一事务直接生成唯一权益；在 4A checkpoint 中，尚未实现的付款撤销和退款关闭曾由 `before_submit` 明确拒绝，避免提前暴露不完整资金流程。
 - 新增受权限保护的 `record_payment` 幂等 API；相同 request ID 和相同内容返回/完成原 Payment，不同内容拒绝。Student Package、Payment、Credit Entry 均继续复用现有 `schedule_write`，没有手动 commit 或新锁服务。
 - 首次并发测试发现锁后普通 SUM 仍读取 MariaDB REPEATABLE READ 旧快照，导致两笔付款完成但未 grant。汇总已改为 locking/current read；随后确认等待前已读取草稿的第二个标准 Document 请求会按 M1/M2 既有策略整体回滚并提示 fresh retry，重试后两笔付款完整、grant 仅一条。
 - 新增 7 项 4A 测试，覆盖待付款、Scheduler 一次付清、分次付款、超额拒绝、API/double-click 幂等、赠送包和并发付款安全重试。最终完整结果为 `Ran 63 tests in 16.932s / OK`：M1 30/30、M2 22/22、M3 11/11。
@@ -69,6 +69,17 @@ git log --oneline -5
 - 最后一课时并发测试确认两个 M2 `+1` 只能一个成功，最终余额为 0。A/B 并发场景下，等待旧快照的请求按既有 MariaDB 策略整体回滚；fresh retry 在锁内重新读取 A=0 后稳定选择 B，只形成合法 M2/M3 链。
 - 新增 19 项 M3 测试。最终完整隔离回归为 `Ran 91 tests in 23.682s / OK`：M1 30/30、M2 22/22、M3 39/39；包含并发、4B 故障注入和全部 4C 边界。
 - Python 编译、全部 JSON 解析和 `git diff --check` 通过；隔离测试数据已清理。正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
+
+### 阶段 4D：资金纠错、退款关闭与人工权益调整（已完成）
+
+- Payment reversal 只允许 Manager，通过新增不可变“撤销”Payment 抵销原流水；服务器从原 `cash_effect` 推导反向金额，原 Payment 不修改、不删除。非空 `reversal_of` 唯一索引和 request ID 幂等共同保证一条原 Payment 最多一个 reversal。
+- 满款激活后撤销收款会派生为欠费冻结：既有 grant、已消费历史和剩余权益均不回写，只禁止新的 M2 扣减。后续正常补足净付款自动恢复候选资格，唯一 `package-grant:<student-package>` 被复用，未重复授予。
+- “退款关闭课包”由 Manager 新增负现金 Payment；锁内 fresh read 当前净付款和权益余额，同事务追加 `退款收回 -N`。退款金额必须大于 0 且不超过有效净收款；余额为 0 仍可关闭，但不生成零值 Credit Entry。关闭后拒绝新收款、课消和普通人工调整。
+- 退款 reversal 新增反向现金 Payment，并严格按原退款固化的 `credits_reclaimed` 快照追加 `+N` 恢复；不重新计算应恢复课时，不恢复退款前已消费课时。收回和恢复分别使用 `payment-refund-reclaim:<refund>`、`payment-reversal-restore:<reversal>`。
+- Manager 人工权益调整只通过受控 API 追加 `人工调整`流水，要求非零整数、非空原因和 request ID；负调整在锁内重算，允许恰好到 0，拒绝负余额。Scheduler、仅 System Manager、无角色、外部用户、Guest、User Permission 受限用户和 DocShare 绕过均被拒绝。
+- 并发覆盖退款与新课消、撤销与补款、双退款、双负调整、退款 reversal 与新课消。等待中的旧文档按既有版本保护完整回滚，fresh retry 后形成唯一合法顺序；净付款、grant、reclaim、restore 和余额均无重复或负数。
+- 故障注入覆盖 reversal 后续失败、退款收回前/后失败、退款 reversal 恢复失败、人工调整插入失败；每次均确认 Payment/Credit 不留半成品，同一 request ID fresh retry 最终只成功一次。
+- 最终完整隔离回归为 `Ran 114 tests / OK`：M1 30/30、M2 22/22、M3 62/62，包含并发、故障注入和权限边界。正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
 
 ## M2 当前状态
 
@@ -284,8 +295,8 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 阶段 4C 已完成完整回归并建立独立 checkpoint；按阶段 4 规则暂不 push。
-2. 停止并等待用户确认后进入阶段 4D：付款撤销、退款关闭及 reversal、Manager 人工权益调整。
+1. 阶段 4D 已完成完整回归并建立独立 checkpoint；按阶段 4 规则暂不 push。
+2. 立即停止开发，等待用户启动独立 Work 代码审计；不要提前进入 UI 阶段。
 3. 所有 migrate、自动化和写入继续只允许在隔离站执行；正式 `frontend` 保持未触碰，直至候选 checkpoint、完整备份和用户明确批准。
 
 ## 明确停止范围

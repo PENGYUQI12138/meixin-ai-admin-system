@@ -33,12 +33,14 @@ class MXPayment(SchedulingDocument):
             self.cash_effect = amount
             self.reversal_of = None
         elif self.operation_type == "退款关闭课包":
-            if not (self.reason or "").strip():
+            self.reason = (self.reason or "").strip()
+            if not self.reason:
                 frappe.throw("退款关闭课包必须填写原因。")
             self.cash_effect = -amount
             self.reversal_of = None
         else:
-            if not (self.reason or "").strip():
+            self.reason = (self.reason or "").strip()
+            if not self.reason:
                 frappe.throw("撤销付款必须填写原因。")
             if not self.reversal_of:
                 frappe.throw("撤销必须引用原付款流水。")
@@ -48,6 +50,13 @@ class MXPayment(SchedulingDocument):
                 frappe.throw("只能撤销已提交且尚非撤销类型的付款流水。")
             if original.student_package != self.student_package:
                 frappe.throw("撤销流水必须与原付款属于同一学生课包。")
+            existing_reversal = frappe.db.get_value(
+                "MX Payment",
+                {"reversal_of": original.name, "name": ["!=", self.name or ""]},
+                "name",
+            )
+            if existing_reversal:
+                frappe.throw("原付款已经存在撤销记录，不能重复撤销。")
             self.amount = abs(decimal_amount(original.cash_effect))
             self.currency = original.currency
             self.cash_effect = -decimal_amount(original.cash_effect)
@@ -56,9 +65,9 @@ class MXPayment(SchedulingDocument):
         frappe.throw("已提交付款不可修改；纠错只能追加撤销流水。")
 
     def before_submit(self):
-        from meixin_admin.payments import finalize_receipt
+        from meixin_admin.payments import finalize_payment
 
-        finalize_receipt(self)
+        finalize_payment(self)
 
     def before_cancel(self):
         frappe.throw("付款不能直接取消；纠错只能追加撤销流水。")
