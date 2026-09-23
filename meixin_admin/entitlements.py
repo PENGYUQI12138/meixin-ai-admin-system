@@ -186,6 +186,7 @@ def package_overview(student_package, include_entries=0):
         "status": status,
         "deal_amount": f"¥{deal:,.2f}",
         "paid_amount": f"¥{paid:,.2f}",
+        "paid_amount_value": f"{paid:.2f}",
         "due_amount": f"¥{due:,.2f}",
         "due_amount_value": f"{due:.2f}",
         "remaining_credits": balance if valid_grant else None,
@@ -193,7 +194,7 @@ def package_overview(student_package, include_entries=0):
             {"name": row.name, "paid_at": str(row.paid_at or ""),
              "operation_type": row.operation_type, "payment_method": row.payment_method,
              "cash_effect": f"¥{decimal_amount(row.cash_effect):,.2f}",
-             "note": row.reason or ""}
+             "note": row.reason or "", "reversal_of": row.reversal_of or ""}
             for row in payments
         ] if cint(include_entries) else [],
         "credits": [

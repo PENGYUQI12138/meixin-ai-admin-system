@@ -1639,6 +1639,44 @@ class TestM3Schema(unittest.TestCase):
             self.student.name, self.plan.name, "购买", nowdate(), request_id=uuid.uuid4().hex,
         ), frappe.PermissionError)
 
+    def test_85_correction_overview_shows_reversal_and_frozen_balance(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        self.set_rule("课消")
+        self.execution().submit()
+        request_id = uuid.uuid4().hex
+        reversal = payments.reverse_payment(receipt.name, "原收款录错", request_id)
+        self.assertEqual(payments.reverse_payment(receipt.name, "原收款录错", request_id), reversal)
+        view = entitlements.package_overview(package.name, 1)
+        self.assertEqual((view["status"], view["paid_amount_value"], view["remaining_credits"]),
+                         ("欠费冻结", "0.00", 19))
+        self.assertEqual(len(view["payments"]), 2)
+        self.assertEqual(next(row for row in view["payments"] if row["name"] == reversal)["reversal_of"],
+                         receipt.name)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {
+            "student_package": package.name, "operation_type": "M2 reversal 返还",
+        }), 0)
+
+    def test_86_refund_close_overview_reclaims_even_for_partial_cash_refund(self):
+        package = self.purchase_and_activate(plan=self.new_plan(price="1.23"))
+        before = frappe.db.count("MX Payment", {"student_package": package.name})
+        self.rejected(lambda: payments.refund_close_package(
+            package.name, "1.24", "超额关闭", uuid.uuid4().hex,
+        ))
+        self.assertEqual(frappe.db.count("MX Payment", {"student_package": package.name}), before)
+        request_id = uuid.uuid4().hex
+        refund = payments.refund_close_package(package.name, "1.00", "整包退款关闭", request_id)
+        self.assertEqual(payments.refund_close_package(
+            package.name, "1.00", "整包退款关闭", request_id,
+        ), refund)
+        view = entitlements.package_overview(package.name, 1)
+        self.assertEqual((view["status"], view["paid_amount_value"], view["remaining_credits"]),
+                         ("已退款关闭", "0.23", 0))
+        self.assertEqual(frappe.db.get_value("MX Payment", refund, "credits_reclaimed"), 20)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {
+            "student_package": package.name, "operation_type": "退款收回",
+        }), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
