@@ -14,7 +14,7 @@
  "sequence_id": 1,
  "is_hidden": 0,
  "hide_custom": 0,
- "content": "[{\"id\": \"mx_heading\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>美心行政</b></span>\", \"col\": 12}}, {\"id\": \"mx_intro\", \"type\": \"paragraph\", \"data\": {\"text\": \"先确认排课，再由上课执行单记录考勤并生成不可变课消决策流水。\", \"col\": 12}}, {\"id\": \"mx_shortcut_0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"学生档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教师档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"课程档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"教室档案\", \"col\": 4}}, {\"id\": \"mx_shortcut_4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"单节排课\", \"col\": 4}}, {\"id\": \"mx_shortcut_5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"周课表\", \"col\": 4}}, {\"id\": \"mx_shortcut_6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"上课执行\", \"col\": 4}}, {\"id\": \"mx_shortcut_7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"课消流水\", \"col\": 4}}, {\"id\": \"mx_shortcut_8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"机构设置\", \"col\": 4}}]",
+ "content": "[{\"id\":\"mx_heading\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>美心行政</b></span>\",\"col\":12}},{\"id\":\"mx_intro\",\"type\":\"paragraph\",\"data\":{\"text\":\"确认排课与上课执行后，在课包概览查看已付金额、剩余课时及不可变权益流水。\",\"col\":12}},{\"id\":\"mx_shortcut_0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"学生档案\",\"col\":4}},{\"id\":\"mx_shortcut_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教师档案\",\"col\":4}},{\"id\":\"mx_shortcut_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课程档案\",\"col\":4}},{\"id\":\"mx_shortcut_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教室档案\",\"col\":4}},{\"id\":\"mx_shortcut_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"单节排课\",\"col\":4}},{\"id\":\"mx_shortcut_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"周课表\",\"col\":4}},{\"id\":\"mx_shortcut_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"上课执行\",\"col\":4}},{\"id\":\"mx_shortcut_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课消流水\",\"col\":4}},{\"id\":\"mx_shortcut_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"机构设置\",\"col\":4}},{\"id\":\"mx_shortcut_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课包产品\",\"col\":4}},{\"id\":\"mx_shortcut_10\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"学生已购课包\",\"col\":4}},{\"id\":\"mx_shortcut_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"收款记录\",\"col\":4}},{\"id\":\"mx_shortcut_12\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课时权益流水\",\"col\":4}}]",
  "shortcuts": [
   {
    "type": "DocType",
@@ -29,6 +29,33 @@
    "label": "课消流水",
    "doc_view": "List",
    "color": "#b45309"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Package Plan",
+   "label": "课包产品",
+   "doc_view": "List",
+   "color": "#2563eb"
+  },
+  {
+   "type": "Report",
+   "link_to": "学生课包概览",
+   "label": "学生已购课包",
+   "color": "#16a34a"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Payment",
+   "label": "收款记录",
+   "doc_view": "List",
+   "color": "#b45309"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Lesson Credit Entry",
+   "label": "课时权益流水",
+   "doc_view": "List",
+   "color": "#7c3aed"
   },
   {
    "type": "DocType",

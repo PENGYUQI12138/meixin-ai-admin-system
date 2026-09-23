@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 import frappe
-from frappe.utils import cint, get_datetime, getdate, now_datetime
+from frappe.utils import cint, get_datetime, getdate, now_datetime, nowdate
 
 from meixin_admin.permissions import require_manager, require_member
 from meixin_admin.scheduling import schedule_write
@@ -112,6 +112,85 @@ def _initial_grant(package, credits):
     if any(row.get(field) != value for field, value in expected.items()):
         frappe.throw("初始权益异常：授予流水与购买快照不一致，请由 Manager 检查历史。")
     return row
+
+
+@frappe.whitelist()
+def package_overview(student_package, include_entries=0):
+    """Permission-checked, read-only Desk snapshot; never used to authorize a write."""
+    require_member()
+    package = frappe.get_doc("MX Student Package", student_package)
+    package.check_permission("read")
+    payment_filters = {"student_package": package.name, "docstatus": 1}
+    credit_filters = {"student_package": package.name}
+    payments = frappe.get_list(
+        "MX Payment", filters=payment_filters,
+        fields=["name", "operation_type", "cash_effect", "reversal_of"], limit_page_length=0,
+    )
+    credits = frappe.get_list(
+        CREDIT_ENTRY_DOCTYPE, filters=credit_filters,
+        fields=["name", "creation", "student", "student_package", "package_plan",
+                "plan_name_snapshot", "course", "course_name_snapshot", "operation_type",
+                "effect", "source_doctype", "source_name", "idempotency_key"],
+        order_by="creation desc, name desc", limit_page_length=0,
+    )
+    if (len(payments) != frappe.db.count("MX Payment", payment_filters)
+            or len(credits) != frappe.db.count(CREDIT_ENTRY_DOCTYPE, credit_filters)):
+        frappe.throw("无权查看该课包的完整账务明细。", frappe.PermissionError)
+
+    paid = sum((decimal_amount(row.cash_effect) for row in payments), Decimal("0"))
+    balance = sum(cint(row.effect) for row in credits)
+    try:
+        grant = _initial_grant(package, credits)
+        valid_grant = bool(grant and package.activated_at)
+    except frappe.ValidationError:
+        valid_grant = False
+    reversed_payments = {row.reversal_of for row in payments if row.reversal_of}
+    refund_closed = any(
+        row.operation_type == "退款关闭课包" and row.name not in reversed_payments
+        for row in payments
+    )
+    today = getdate(nowdate())
+    if package.docstatus == 0:
+        status = "草稿"
+    elif package.docstatus == 2:
+        status = "已取消"
+    elif refund_closed:
+        status = "已退款关闭"
+    elif not valid_grant:
+        status = ("待付款" if not credits and package.acquisition_type == "购买"
+                  and paid < decimal_amount(package.deal_amount) else "初始权益异常")
+    elif balance < 0 or not package.effective_from or (
+        package.expires_on and getdate(package.expires_on) < getdate(package.effective_from)
+    ):
+        status = "课包资料异常"
+    elif package.acquisition_type == "购买" and paid < decimal_amount(package.deal_amount):
+        status = "欠费冻结"
+    elif today < getdate(package.effective_from):
+        status = "尚未生效"
+    elif package.expires_on and today > getdate(package.expires_on):
+        status = "已过期"
+    elif balance == 0:
+        status = "已耗尽"
+    else:
+        status = "生效"
+
+    return {
+        "student": package.student,
+        "course": package.course,
+        "course_name": package.course_name_snapshot,
+        "effective_from": str(package.effective_from or ""),
+        "expires_on": str(package.expires_on or ""),
+        "status": status,
+        "deal_amount": f"¥{decimal_amount(package.deal_amount):,.2f}",
+        "paid_amount": f"¥{paid:,.2f}",
+        "remaining_credits": balance if valid_grant else None,
+        "credits": [
+            {"name": row.name, "creation": str(row.creation),
+             "operation_type": row.operation_type, "effect": row.effect,
+             "source_doctype": row.source_doctype, "source_name": row.source_name}
+            for row in credits
+        ] if cint(include_entries) else [],
+    }
 
 
 def grant_package(package):

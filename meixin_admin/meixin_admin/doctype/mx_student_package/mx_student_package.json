@@ -17,6 +17,7 @@
   "effective_from",
   "expires_on",
   "activated_at",
+  "package_overview",
   "source_reference",
   "request_id",
   "amended_from",
@@ -121,6 +122,11 @@
    "read_only": 1,
    "no_copy": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "package_overview",
+   "fieldtype": "HTML",
+   "label": "课包状态与权益（只读）"
   },
   {
    "fieldname": "source_reference",

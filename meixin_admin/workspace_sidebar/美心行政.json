@@ -23,6 +23,30 @@
   },
   {
    "type": "Link",
+   "label": "课包产品",
+   "link_type": "DocType",
+   "link_to": "MX Package Plan"
+  },
+  {
+   "type": "Link",
+   "label": "学生已购课包",
+   "link_type": "Report",
+   "link_to": "学生课包概览"
+  },
+  {
+   "type": "Link",
+   "label": "收款记录",
+   "link_type": "DocType",
+   "link_to": "MX Payment"
+  },
+  {
+   "type": "Link",
+   "label": "课时权益流水",
+   "link_type": "DocType",
+   "link_to": "MX Lesson Credit Entry"
+  },
+  {
+   "type": "Link",
    "label": "教师档案",
    "link_type": "DocType",
    "link_to": "MX Teacher"

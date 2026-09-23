@@ -1485,6 +1485,67 @@ class TestM3Schema(unittest.TestCase):
             "MX Lesson Credit Entry", {"student_package": package.name, "operation_type": "购买授予"},
         ), 1)
 
+    def test_78_package_overview_and_report_show_derived_cny_values(self):
+        from meixin_admin.meixin_admin.report.学生课包概览.学生课包概览 import execute
+
+        plan = self.new_plan(price="0.10")
+        package = self.package(plan=plan).submit()
+        self.payment(package, "0.01").submit()
+        pending = entitlements.package_overview(package.name)
+        self.assertEqual((pending["status"], pending["paid_amount"], pending["remaining_credits"]),
+                         ("待付款", "¥0.01", None))
+        self.payment(package, "0.09").submit()
+        overview = entitlements.package_overview(package.name, include_entries=1)
+        self.assertEqual((overview["status"], overview["deal_amount"],
+                          overview["paid_amount"], overview["remaining_credits"]),
+                         ("生效", "¥0.10", "¥0.10", 20))
+        self.assertEqual(len(overview["credits"]), 1)
+        self.assertEqual(overview["credits"][0]["operation_type"], "购买授予")
+        self.assertEqual(overview["credits"][0]["source_doctype"], "MX Student Package")
+        columns, rows = execute({"student": self.student.name})
+        self.assertIn("派生状态（今日）", [column["label"] for column in columns])
+        self.assertEqual([row for row in rows if row["name"] == package.name][0]["paid_amount"], "¥0.10")
+
+    def test_79_overview_report_role_and_user_permission_boundary(self):
+        from meixin_admin.meixin_admin.report.学生课包概览.学生课包概览 import execute
+
+        package = self.package("赠送").submit()
+        for role in ("Meixin Scheduler", "Meixin Manager"):
+            frappe.set_user("Administrator")
+            member = self.user(role)
+            frappe.set_user(member)
+            self.assertEqual(entitlements.package_overview(package.name)["remaining_credits"], 20)
+            self.assertIn(package.name, [row["name"] for row in execute()[1]])
+        frappe.set_user("Administrator")
+        denied = (self.user("System Manager"), self.user(), "Guest")
+        for user in denied:
+            frappe.set_user(user)
+            self.rejected(lambda: entitlements.package_overview(package.name), frappe.PermissionError)
+            self.rejected(lambda: execute(), frappe.PermissionError)
+        frappe.set_user("Administrator")
+        restricted = self.user("Meixin Scheduler")
+        other = frappe.get_doc({
+            "doctype": "MX Student", "student_name": "5A无权学生",
+            "guardian_phone": "00000000003", "enabled": 1, "demo_batch": self.batch,
+        }).insert()
+        frappe.get_doc({
+            "doctype": "User Permission", "user": restricted, "allow": "MX Student",
+            "for_value": other.name, "apply_to_all_doctypes": 1,
+        }).insert(ignore_permissions=True)
+        frappe.set_user(restricted)
+        self.rejected(lambda: entitlements.package_overview(package.name), frappe.PermissionError)
+        self.assertNotIn(package.name, [row["name"] for row in execute()[1]])
+
+    def test_80_workspace_and_credit_entry_remain_read_only(self):
+        workspace = frappe.get_doc("Workspace", "美心行政")
+        links = {(row.label, row.link_to) for row in workspace.shortcuts}
+        self.assertTrue({("课包产品", "MX Package Plan"), ("学生已购课包", "学生课包概览"),
+                         ("收款记录", "MX Payment"), ("课时权益流水", "MX Lesson Credit Entry")} <= links)
+        for role in ("Meixin Scheduler", "Meixin Manager"):
+            permission = frappe.get_doc("DocPerm", {"parent": "MX Lesson Credit Entry", "role": role})
+            self.assertEqual((permission.read, permission.create, permission.write, permission.delete),
+                             (1, 0, 0, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

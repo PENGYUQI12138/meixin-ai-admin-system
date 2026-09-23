@@ -1,0 +1,15 @@
+{
+ "doctype": "Report",
+ "name": "学生课包概览",
+ "report_name": "学生课包概览",
+ "report_type": "Script Report",
+ "ref_doctype": "MX Student Package",
+ "module": "Meixin Admin",
+ "is_standard": "Yes",
+ "disabled": 0,
+ "apply_user_permissions": 1,
+ "roles": [
+  {"role": "Meixin Manager"},
+  {"role": "Meixin Scheduler"}
+ ]
+}

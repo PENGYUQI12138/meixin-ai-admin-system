@@ -95,6 +95,14 @@ git log --oneline -5
 - 共用人民币金额入口按输入 Decimal 位数拒绝第三位小数，即使该位为 0（如 `1.000`）；正常 `0.01` 仍可保存。Frappe 16.34 的 Currency 写库路径经 `get_valid_dict`/`flt` 转为 binary64，因此将绝对金额上限收紧为 `9,999,999,999,999.99` 元，使全部允许值的浮点误差低于半分；超出上限明确拒绝。
 - 两项新定向测试在修复前均失败、修复后均通过；隔离站完整回归 `Ran 129 tests in 35.605s / OK`（M1 30、M2 22、M3 77）。上限金额经 Plan、Student Package、Payment `amount`/`cash_effect` 保存重读均保持一致，并只产生一次 grant。正式 `frontend` 未触碰；不 push。
 
+### 阶段 5A：原生只读概览与 Workspace（已完成，待 5B 指令）
+
+- Workspace/Sidebar 新增课包产品、学生已购课包、收款记录、课时权益流水四个入口；学生已购课包使用 Frappe 原生 Script Report 展示服务端派生状态、净已付金额、剩余课时和有效期。Student Package 原生详情增加只读权益流水与来源单据，不新增可编辑余额或状态，也不加入付款、退款、撤销或调整按钮。
+- `package_overview` 在服务端检查业务角色、单据读取权及完整 Payment/Credit 可见性；金额以人民币两位展示。写入流程仍只按原事务锁内计算，不使用页面派生结果。新增 3 项 M3 测试覆盖金额/状态/来源、角色和 User Permission、四入口及 Credit 只读。
+- 仅在 `test_meixin_m1.localhost` 隔离站 migrate；独立 Edge/Playwright 页面验收实际点击四入口，核对四类列表和 Plan、Package、Payment、Credit 详情。虚构测试包显示 `¥1.23` 应收/已付、20 剩余课时与唯一购买授予来源；Scheduler 可见但无取消入口，User Permission 受限账号在报表中不可见且直达详情被拒绝。
+- 浏览器控制台未见 5A 脚本异常；有 Frappe 自身图标预加载警告 2 条，以及故意测试无权访问所致预期 403/PermissionError 2 条，不记为零警告。隔离测试批次的计划、课包、付款、权益、学生、课程、测试账号和角色子记录均清理；清理后再次 migrate 无孤立角色告警。
+- 隔离站完整回归 `Ran 132 tests in 36.512s / OK`（M1 30、M2 22、M3 80）。Python compile、JavaScript `node --check`、JSON parse 和 `git diff --check` 通过。正式 `frontend` 未迁移、重建、测试或写入；阶段 5A 不 push。
+
 ## M2 当前状态
 
 ### 阶段 1：设计与分支基线（已完成）
@@ -309,7 +317,7 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 第二轮金额边界修复 checkpoint 后立即停止开发，等待用户独立复审；暂不 push，不进入 UI 阶段。
+1. 阶段 5A checkpoint 后停止，等待用户确认进入 5B；暂不 push。
 2. 后续任何正式迁移前，先只读审查现有金额列是否符合人民币分精度，避免旧数据在缩小字段 scale 时被数据库静默舍入；未经用户确认不触碰正式 `frontend`。
 3. 所有 migrate、自动化和写入继续只允许在隔离站执行；正式 `frontend` 保持未触碰，直至候选 checkpoint、完整备份和用户明确批准。
 
