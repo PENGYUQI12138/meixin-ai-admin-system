@@ -6,10 +6,43 @@ from decimal import Decimal, InvalidOperation
 import frappe
 from frappe.utils import cint, get_datetime, getdate, now_datetime
 
-from meixin_admin.permissions import require_manager
+from meixin_admin.permissions import require_manager, require_member
 from meixin_admin.scheduling import schedule_write
+from meixin_admin.money import decimal_amount
 
 CREDIT_ENTRY_DOCTYPE = "MX Lesson Credit Entry"
+
+
+@frappe.whitelist()
+def create_student_package(student, package_plan, acquisition_type, effective_from,
+                           expires_on=None, source_reference=None, request_id=None):
+    """Create one purchase intent, reusing the same request after network retry."""
+    require_member()
+    frappe.has_permission("MX Student Package", "create", throw=True)
+    request_id = (request_id or "").strip()
+    if not request_id or len(request_id) > 140:
+        frappe.throw("首次创建学生课包必须提供稳定的系统请求标识。")
+    effective_from = getdate(effective_from)
+    expires_on = getdate(expires_on) if expires_on else None
+    source_reference = (source_reference or "").strip()
+    with schedule_write():
+        name = frappe.db.get_value("MX Student Package", {"request_id": request_id})
+        if name:
+            existing = frappe.get_doc("MX Student Package", name)
+            existing.check_permission("read")
+            if (existing.student != student or existing.package_plan != package_plan
+                    or existing.acquisition_type != acquisition_type
+                    or getdate(existing.effective_from) != effective_from
+                    or (getdate(existing.expires_on) if existing.expires_on else None) != expires_on
+                    or (existing.source_reference or "").strip() != source_reference):
+                frappe.throw("相同请求标识包含不同课包内容，已停止创建。")
+            return existing.name
+        return frappe.get_doc({
+            "doctype": "MX Student Package", "student": student,
+            "package_plan": package_plan, "acquisition_type": acquisition_type,
+            "effective_from": effective_from, "expires_on": expires_on,
+            "source_reference": source_reference, "request_id": request_id,
+        }).insert().name
 
 
 @contextmanager
@@ -55,11 +88,51 @@ def insert_credit_idempotent(values):
         return frappe.get_doc(values).insert(ignore_permissions=True)
 
 
+def _initial_grant(package, credits):
+    """Reject every malformed claim to this package's initial grant."""
+    expected_operation = "购买授予" if package.acquisition_type == "购买" else "赠送授予"
+    expected_key = f"package-grant:{package.name}"
+    claims = [row for row in credits if row.operation_type in {"购买授予", "赠送授予"}
+              or row.idempotency_key == expected_key
+              or row.source_doctype == "MX Student Package"
+              and row.source_name == package.name and row.operation_type != "人工调整"]
+    if len(claims) > 1:
+        frappe.throw("初始权益异常：课包存在多条初始授予流水，请由 Manager 检查历史。")
+    if not claims:
+        return None
+    row = claims[0]
+    expected = {
+        "student": package.student, "student_package": package.name,
+        "package_plan": package.package_plan, "plan_name_snapshot": package.plan_name_snapshot,
+        "course": package.course, "course_name_snapshot": package.course_name_snapshot,
+        "operation_type": expected_operation, "effect": cint(package.credits_granted),
+        "source_doctype": "MX Student Package", "source_name": package.name,
+        "idempotency_key": expected_key,
+    }
+    if any(row.get(field) != value for field, value in expected.items()):
+        frappe.throw("初始权益异常：授予流水与购买快照不一致，请由 Manager 检查历史。")
+    return row
+
+
 def grant_package(package):
     """Grant a package exactly once; caller already owns schedule_write."""
     if package.acquisition_type not in {"购买", "赠送"}:
         frappe.throw("不支持的课包获取类型。")
     operation = "购买授予" if package.acquisition_type == "购买" else "赠送授予"
+    credits = frappe.db.sql(
+        f"""SELECT student, student_package, package_plan, plan_name_snapshot, course,
+                   course_name_snapshot, operation_type, effect, source_doctype,
+                   source_name, idempotency_key
+            FROM `tab{CREDIT_ENTRY_DOCTYPE}` WHERE student_package=%s FOR UPDATE""",
+        (package.name,), as_dict=True,
+    )
+    existing = _initial_grant(package, credits)
+    if existing:
+        if not package.activated_at:
+            frappe.throw("初始权益异常：已有授予流水但首次激活时间缺失，不能补写 FIFO 时间。")
+        return frappe.get_doc(CREDIT_ENTRY_DOCTYPE, {"idempotency_key": existing.idempotency_key})
+    if package.activated_at:
+        frappe.throw("初始权益异常：激活时间存在但授予流水缺失。")
     values = {
         "doctype": CREDIT_ENTRY_DOCTYPE,
         "student": package.student,
@@ -77,16 +150,15 @@ def grant_package(package):
         "demo_batch": package.demo_batch,
     }
     entry = insert_credit_idempotent(values)
-    if not package.activated_at:
-        activated_at = now_datetime()
-        if package.docstatus == 0:
-            package.activated_at = activated_at
-        else:
-            frappe.db.set_value(
-                "MX Student Package", package.name, "activated_at", activated_at,
-                update_modified=False,
-            )
-            package.activated_at = activated_at
+    activated_at = now_datetime()
+    if package.docstatus == 0:
+        package.activated_at = activated_at
+    else:
+        frappe.db.set_value(
+            "MX Student Package", package.name, "activated_at", activated_at,
+            update_modified=False,
+        )
+        package.activated_at = activated_at
     return entry
 
 
@@ -112,22 +184,17 @@ def _existing_m2_credit(consumption, operation, effect, key):
 
 def _locked_package_state(package):
     credits = frappe.db.sql(
-        f"""SELECT operation_type, effect, source_doctype, source_name
+        f"""SELECT student, student_package, package_plan, plan_name_snapshot, course,
+                   course_name_snapshot, operation_type, effect, source_doctype,
+                   source_name, idempotency_key
             FROM `tab{CREDIT_ENTRY_DOCTYPE}`
             WHERE student_package=%s ORDER BY creation, name FOR UPDATE""",
         (package.name,), as_dict=True,
     )
-    expected_grant = "购买授予" if package.acquisition_type == "购买" else "赠送授予"
-    grants = [
-        row for row in credits
-        if row.operation_type == expected_grant
-        and row.source_doctype == "MX Student Package"
-        and row.source_name == package.name
-        and cint(row.effect) == cint(package.credits_granted)
-    ]
+    grant = _initial_grant(package, credits)
     state = {
         "balance": sum(cint(row.effect) for row in credits),
-        "has_grant": len(grants) == 1,
+        "has_grant": bool(grant),
         "net_paid": Decimal("0"),
         "refund_closed": False,
     }
@@ -186,7 +253,7 @@ def _select_eligible_package(consumption):
             reasons.add("refund_closed")
             continue
         if package.acquisition_type == "购买" and state["has_grant"] \
-                and state["net_paid"] < Decimal(str(package.deal_amount)):
+                and state["net_paid"] < decimal_amount(package.deal_amount):
             reasons.add("frozen")
             continue
         if state["has_grant"] and not package.activated_at:
@@ -195,7 +262,7 @@ def _select_eligible_package(consumption):
         if not state["has_grant"]:
             reasons.add(
                 "unpaid" if package.acquisition_type == "购买"
-                and state["net_paid"] < Decimal(str(package.deal_amount)) else "invalid_grant"
+                and state["net_paid"] < decimal_amount(package.deal_amount) else "invalid_grant"
             )
             continue
         if lesson_date < getdate(package.effective_from):
@@ -293,7 +360,7 @@ def restore_m2_entry(original, reversal):
 
 def reclaim_refund_credits(package, payment):
     """Snapshot and reclaim all remaining credit for one refund-close Payment."""
-    balance = locked_credit_balance(package.name)
+    balance = _locked_package_state(package)["balance"]
     if balance < 0:
         frappe.throw("课包权益余额异常，已停止退款关闭；请由 Manager 检查历史流水。")
     payment.credits_reclaimed = balance

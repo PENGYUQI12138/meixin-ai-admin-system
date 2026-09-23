@@ -21,7 +21,7 @@ def assert_isolated_site():
         raise RuntimeError("本轮并发集成测试只验证现场同型 MariaDB 数据库。")
 
 
-def run():
+def run(audit_only=False):
     """bench --site test_meixin_m1.localhost execute meixin_admin.tests.run.run"""
     assert_isolated_site()
     previous_user = frappe.session.user
@@ -29,11 +29,19 @@ def run():
     try:
         frappe.flags.in_test = True
         frappe.set_user("Administrator")
-        suite = unittest.TestSuite([
-            unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m1"),
-            unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m2"),
-            unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m3"),
-        ])
+        if audit_only:
+            from meixin_admin.tests.test_m3 import TestM3Schema
+
+            suite = unittest.TestSuite(
+                TestM3Schema(name) for name in dir(TestM3Schema)
+                if name.startswith("test_") and int(name[5:7]) >= 63
+            )
+        else:
+            suite = unittest.TestSuite([
+                unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m1"),
+                unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m2"),
+                unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m3"),
+            ])
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         if not result.wasSuccessful():
             raise RuntimeError(f"美心集成验收失败：失败 {len(result.failures)}，错误 {len(result.errors)}。")

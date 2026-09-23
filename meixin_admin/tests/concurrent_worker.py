@@ -23,6 +23,7 @@ def main():
             "execution_submit": "MX Session Execution", "session_cancel": "MX Session",
             "settings": "MX Settings", "payment_submit": "MX Payment",
             "credit_adjust": "MX Student Package",
+            "package_create": "MX Student",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
@@ -44,6 +45,16 @@ def main():
                 doc.name = adjust_credits(
                     doc.name, config["field"], "并发人工调整测试", config["value"],
                 )
+            elif config["operation"] == "package_create":
+                from meixin_admin.entitlements import create_student_package
+
+                test_batch = doc.demo_batch
+                doc.name = create_student_package(
+                    doc.name, config["field"]["plan"], "购买",
+                    config["field"]["effective_from"], None,
+                    "并发课包创建", config["value"],
+                )
+                frappe.db.set_value("MX Student Package", doc.name, "demo_batch", test_batch)
             elif config["operation"] == "session_cancel":
                 doc.cancel()
             elif config["operation"] == "settings":

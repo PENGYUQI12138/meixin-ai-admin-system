@@ -8,11 +8,13 @@ import threading
 import time
 import unittest
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from zoneinfo import ZoneInfo
 from unittest.mock import patch
 
 import frappe
-from frappe.utils import add_days, now_datetime, nowdate
+from frappe.utils import add_days, getdate, now_datetime, nowdate
 
 from meixin_admin import consumption
 from meixin_admin import entitlements
@@ -92,6 +94,7 @@ class TestM3Schema(unittest.TestCase):
         return frappe.get_doc({
             "doctype": "MX Student Package", "student": self.student.name,
             "package_plan": (plan or self.plan).name, "acquisition_type": acquisition_type,
+            "request_id": uuid.uuid4().hex,
             "effective_from": effective_from or nowdate(), "expires_on": expires_on,
             "demo_batch": self.batch,
         }).insert()
@@ -1224,6 +1227,237 @@ class TestM3Schema(unittest.TestCase):
             frappe.db.count("MX Lesson Credit Entry", {"operation_type": "退款 reversal 恢复"}), 1,
         )
         self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 1)
+
+    def test_63_supplement_cannot_recreate_missing_activation_time(self):
+        package = self.purchase_and_activate()
+        receipt = frappe.get_doc("MX Payment", {"student_package": package.name, "operation_type": "收款"})
+        self.reverse(receipt)
+        frappe.db.set_value("MX Student Package", package.name, "activated_at", None)
+        before = frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name})
+        supplement = self.payment(package, package.deal_amount)
+        self.assertIn("初始权益异常", self.rejected(supplement.submit))
+        self.assertEqual(frappe.get_doc("MX Payment", supplement.name).docstatus, 0)
+        self.assertIsNone(frappe.db.get_value("MX Student Package", package.name, "activated_at"))
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name}), before)
+
+    def test_64_money_rejects_sub_cent_before_persistence(self):
+        self.assertIn("精度", self.rejected(lambda: self.new_plan(price="0.001")))
+        package = self.package(plan=self.new_plan(price="0.01")).submit()
+        self.assertIn("精度", self.rejected(lambda: self.payment(package, "0.004")))
+        self.assertEqual(frappe.db.count("MX Payment", {"student_package": package.name}), 0)
+
+    def test_65_package_request_retry_reuses_matching_purchase(self):
+        from meixin_admin.entitlements import create_student_package
+
+        request_id = uuid.uuid4().hex
+        first = create_student_package(
+            self.student.name, self.plan.name, "购买", nowdate(), None, "审计测试", request_id,
+        )
+        second = create_student_package(
+            self.student.name, self.plan.name, "购买", nowdate(), None, "审计测试", request_id,
+        )
+        self.assertEqual(first, second)
+        self.assertIn("不同", self.rejected(lambda: create_student_package(
+            self.student.name, self.plan.name, "购买", nowdate(), None, "不同来源", request_id,
+        )))
+        self.assertEqual(frappe.db.count("MX Student Package", {"request_id": request_id}), 1)
+
+    def test_66_malformed_extra_grant_cannot_be_counted_as_balance(self):
+        package = self.package("赠送").submit()
+        entitlements.insert_credit_idempotent({
+            "doctype": "MX Lesson Credit Entry", "student": package.student,
+            "student_name_snapshot": self.student.student_name,
+            "student_package": package.name, "package_plan": package.package_plan,
+            "plan_name_snapshot": package.plan_name_snapshot, "course": package.course,
+            "course_name_snapshot": package.course_name_snapshot,
+            "operation_type": "赠送授予", "effect": 1,
+            "source_doctype": "MX Student Package", "source_name": package.name,
+            "idempotency_key": "test-malformed-grant:" + uuid.uuid4().hex,
+            "demo_batch": self.batch,
+        })
+        self.set_rule("课消")
+        execution = self.execution()
+        self.assertIn("初始权益", self.rejected(execution.submit))
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
+
+    def test_67_exact_cents_full_payment_matches_reloaded_cash_and_grant(self):
+        package = self.package(plan=self.new_plan(price="0.03")).submit()
+        for _ in range(3):
+            self.payment(package, "0.01").submit()
+        package.reload()
+        rows = frappe.get_all(
+            "MX Payment", filters={"student_package": package.name, "docstatus": 1},
+            fields=["amount", "cash_effect"],
+        )
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(Decimal(str(row.amount)) == Decimal("0.01") and
+                            Decimal(str(row.cash_effect)) == Decimal("0.01") for row in rows))
+        self.assertEqual(payments.locked_net_paid(package.name), Decimal("0.03"))
+        self.assertEqual(Decimal(str(package.deal_amount)), Decimal("0.03"))
+        self.assertTrue(package.activated_at)
+        self.assertEqual(frappe.db.count(
+            "MX Lesson Credit Entry", {"student_package": package.name, "operation_type": "购买授予"},
+        ), 1)
+        for amount in ("0.001", "0.0000000001", "0.015"):
+            self.assertIn("精度", self.rejected(lambda amount=amount: self.payment(package, amount)))
+            self.assertIn("精度", self.rejected(lambda amount=amount: payments.refund_close_package(
+                package.name, amount, "超精度退款", uuid.uuid4().hex,
+            )))
+
+    def test_68_plan_edits_do_not_rewrite_package_or_credit_snapshots(self):
+        package = self.purchase_and_activate()
+        grant = frappe.get_doc("MX Lesson Credit Entry", {
+            "student_package": package.name, "operation_type": "购买授予",
+        })
+        original = (
+            package.plan_name_snapshot, package.course, package.credits_granted,
+            Decimal(str(package.deal_amount)), grant.plan_name_snapshot,
+            grant.course, grant.effect,
+        )
+        self.plan.plan_name = "改价后新产品"
+        self.plan.standard_credits = 30
+        self.plan.standard_price = "3000.05"
+        self.plan.save()
+        package.reload()
+        grant.reload()
+        self.assertEqual((
+            package.plan_name_snapshot, package.course, package.credits_granted,
+            Decimal(str(package.deal_amount)), grant.plan_name_snapshot,
+            grant.course, grant.effect,
+        ), original)
+
+    def test_69_chongqing_midnight_date_boundaries_use_scheduled_start(self):
+        self.assertEqual(frappe.db.get_single_value("System Settings", "time_zone"), "Asia/Chongqing")
+        day = getdate(add_days(nowdate(), 2))
+        local_midnight = datetime.combine(day, datetime.min.time()).replace(
+            hour=0, minute=15, tzinfo=ZoneInfo("Asia/Chongqing"),
+        )
+        self.assertEqual(local_midnight.astimezone(timezone.utc).date(), day - timedelta(days=1))
+        package = self.package("赠送", effective_from=day, expires_on=day).submit()
+        self.set_rule("课消")
+        before = self.execution(session=self.session(start=(local_midnight - timedelta(days=1)).replace(tzinfo=None)))
+        self.assertIn("尚未生效", self.rejected(before.submit))
+        on_day = self.execution(session=self.session(start=local_midnight.replace(tzinfo=None)))
+        on_day.submit()
+        self.assertEqual(self.debited_package(on_day), package.name)
+        after = self.execution(session=self.session(start=(local_midnight + timedelta(days=1)).replace(tzinfo=None)))
+        self.assertIn("过期", self.rejected(after.submit))
+
+    def test_70_record_payment_role_user_permission_and_share_boundary(self):
+        package = self.package().submit()
+        paid_at = now_datetime()
+        allowed_users = [self.user(role) for role in ("Meixin Scheduler", "Meixin Manager")]
+        denied_users = [self.user("System Manager"), self.user(), self.user(user_type="Website User")]
+        for user in allowed_users:
+            frappe.set_user(user)
+            payments.record_payment(package.name, "0.01", "现金", paid_at, uuid.uuid4().hex)
+        frappe.set_user("Administrator")
+        for user in (*denied_users, "Guest"):
+            frappe.set_user(user)
+            self.rejected(lambda: payments.record_payment(
+                package.name, "0.01", "现金", paid_at, uuid.uuid4().hex,
+            ), frappe.PermissionError)
+        frappe.set_user("Administrator")
+        other = frappe.get_doc({
+            "doctype": "MX Student", "student_name": "无权学生",
+            "guardian_phone": "00000000002", "enabled": 1, "demo_batch": self.batch,
+        }).insert()
+        manager = self.user("Meixin Manager")
+        frappe.get_doc({
+            "doctype": "User Permission", "user": manager, "allow": "MX Student",
+            "for_value": other.name, "apply_to_all_doctypes": 1,
+        }).insert(ignore_permissions=True)
+        frappe.set_user(manager)
+        self.rejected(lambda: payments.record_payment(
+            package.name, "0.01", "现金", paid_at, uuid.uuid4().hex,
+        ), frappe.PermissionError)
+        frappe.set_user("Administrator")
+        outsider = self.user("System Manager")
+        self.rejected(lambda: frappe.get_doc({
+            "doctype": "DocShare", "share_doctype": "MX Payment",
+            "share_name": frappe.db.get_value("MX Payment", {"student_package": package.name}),
+            "user": outsider, "read": 1,
+        }).insert(), frappe.PermissionError)
+
+    def test_71_package_generic_create_requires_stable_request_id(self):
+        self.assertIn("请求标识", self.rejected(lambda: frappe.get_doc({
+            "doctype": "MX Student Package", "student": self.student.name,
+            "package_plan": self.plan.name, "acquisition_type": "购买",
+            "effective_from": nowdate(), "demo_batch": self.batch,
+        }).insert()))
+        request_id = uuid.uuid4().hex
+        first = frappe.get_doc({
+            "doctype": "MX Student Package", "student": self.student.name,
+            "package_plan": self.plan.name, "acquisition_type": "购买",
+            "effective_from": nowdate(), "request_id": request_id, "demo_batch": self.batch,
+        }).insert()
+        self.assertEqual(entitlements.create_student_package(
+            self.student.name, self.plan.name, "购买", nowdate(), request_id=request_id,
+        ), first.name)
+        self.rejected(lambda: frappe.get_doc({
+            "doctype": "MX Student Package", "student": self.student.name,
+            "package_plan": self.plan.name, "acquisition_type": "购买",
+            "effective_from": nowdate(), "request_id": request_id, "demo_batch": self.batch,
+        }).insert(), Exception)
+        self.assertEqual(frappe.db.count("MX Student Package", {"request_id": request_id}), 1)
+
+    def test_72_concurrent_package_create_reuses_one_request_on_retry(self):
+        request_id = uuid.uuid4().hex
+        frappe.db.commit()
+        self.committed = True
+        field = {"plan": self.plan.name, "effective_from": str(nowdate())}
+        results = self.concurrent_pair(
+            self.worker(self.student.name, operation="package_create", hold=True,
+                        field=field, value=request_id),
+            self.worker(self.student.name, operation="package_create",
+                        field=field, value=request_id),
+        )
+        self.assertEqual([row["ok"] for row in results], [True, False], results)
+        self.assertEqual(entitlements.create_student_package(
+            self.student.name, self.plan.name, "购买", field["effective_from"],
+            source_reference="并发课包创建", request_id=request_id,
+        ), results[0]["name"])
+        self.assertEqual(frappe.db.count("MX Student Package", {"request_id": request_id}), 1)
+
+    def test_73_required_database_unique_indexes_exist(self):
+        expected = {
+            "MX Student Package": {"request_id"},
+            "MX Payment": {"request_id", "reversal_of"},
+            "MX Lesson Credit Entry": {"idempotency_key", "m2_consumption_entry", "reversal_of"},
+        }
+        for doctype, fields in expected.items():
+            indexes = frappe.db.sql(f"SHOW INDEX FROM `tab{doctype}`", as_dict=True)
+            actual = {row.Column_name for row in indexes if row.Non_unique == 0}
+            self.assertTrue(fields <= actual, (doctype, fields - actual))
+
+    def test_74_malformed_grant_blocks_refund_balance_use(self):
+        package = self.purchase_and_activate()
+        entitlements.insert_credit_idempotent({
+            "doctype": "MX Lesson Credit Entry", "student": package.student,
+            "student_name_snapshot": self.student.student_name,
+            "student_package": package.name, "package_plan": package.package_plan,
+            "plan_name_snapshot": package.plan_name_snapshot, "course": package.course,
+            "course_name_snapshot": package.course_name_snapshot,
+            "operation_type": "购买授予", "effect": 1,
+            "source_doctype": "MX Student Package", "source_name": package.name,
+            "idempotency_key": "test-refund-malformed:" + uuid.uuid4().hex,
+            "demo_batch": self.batch,
+        })
+        self.assertIn("初始权益异常", self.rejected(lambda: self.refund_close(package, 100)))
+        self.assertEqual(frappe.db.count("MX Payment", {
+            "student_package": package.name, "operation_type": "退款关闭课包",
+        }), 0)
+
+    def test_75_wrong_grant_snapshot_is_rejected_before_credit_use(self):
+        package = self.package("赠送").submit()
+        grant = frappe.get_doc("MX Lesson Credit Entry", {
+            "student_package": package.name, "operation_type": "赠送授予",
+        })
+        frappe.db.set_value("MX Lesson Credit Entry", grant.name, "source_name", "INVALID-SOURCE")
+        self.set_rule("课消")
+        execution = self.execution()
+        self.assertIn("初始权益异常", self.rejected(execution.submit))
+        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
 
 
 if __name__ == "__main__":

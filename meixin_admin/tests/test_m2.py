@@ -44,6 +44,7 @@ class TestM2(unittest.TestCase):
             self.packages.append(frappe.get_doc({
                 "doctype": "MX Student Package", "student": student.name,
                 "package_plan": self.plan.name, "acquisition_type": "赠送",
+                "request_id": uuid.uuid4().hex,
                 "effective_from": now_datetime().date(), "demo_batch": self.batch,
             }).insert().submit())
 

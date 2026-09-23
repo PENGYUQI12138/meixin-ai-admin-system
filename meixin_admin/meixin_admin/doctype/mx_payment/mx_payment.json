@@ -60,6 +60,7 @@
   {
    "fieldname": "amount",
    "fieldtype": "Currency",
+   "precision": "2",
    "label": "金额",
    "options": "currency",
    "reqd": 1,
@@ -69,6 +70,7 @@
   {
    "fieldname": "cash_effect",
    "fieldtype": "Currency",
+   "precision": "2",
    "label": "现金效果",
    "options": "currency",
    "read_only": 1,

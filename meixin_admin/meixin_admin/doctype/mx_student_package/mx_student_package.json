@@ -85,6 +85,7 @@
   {
    "fieldname": "deal_amount",
    "fieldtype": "Currency",
+   "precision": "2",
    "label": "成交金额快照",
    "options": "currency",
    "reqd": 1,

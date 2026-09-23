@@ -43,6 +43,7 @@
   {
    "fieldname": "standard_price",
    "fieldtype": "Currency",
+   "precision": "2",
    "label": "标准价格",
    "options": "currency",
    "reqd": 1,

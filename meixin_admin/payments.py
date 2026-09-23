@@ -1,23 +1,14 @@
 """M3 immutable receipt, reversal and refund-close services."""
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 import frappe
 from frappe.utils import get_datetime, now_datetime
 
 from meixin_admin.permissions import require_manager, require_member
 from meixin_admin.scheduling import schedule_write
+from meixin_admin.money import decimal_amount
 
 PAYMENT_DOCTYPE = "MX Payment"
-
-
-def decimal_amount(value):
-    try:
-        amount = Decimal(str(value or 0))
-    except (InvalidOperation, TypeError, ValueError):
-        frappe.throw("金额格式不正确。")
-    if not amount.is_finite():
-        frappe.throw("金额格式不正确。")
-    return amount
 
 
 def locked_net_paid(student_package):

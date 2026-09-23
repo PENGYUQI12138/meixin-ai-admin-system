@@ -77,13 +77,15 @@ Manager 可以维护 Package Plan，Scheduler 只读。修改计划只影响后�
 - 成交金额和币种快照
 - 生效日期、可选失效日期
 - 原始报名/购买来源说明
-- 系统生成且只读的 `request_id`，数据库唯一
+- 首次业务请求固定的 `request_id`，表单只读且数据库唯一；网络重试必须复用同一值
 - 首次激活时间，只读
 - `amended_from`
 
 购买型课包允许分次付款。净收款不足成交金额时为“待付款”；净收款恰好达到成交金额时，在完成该笔付款的同一事务内一次性生成完整 `+N` 初始课时权益。不得按付款比例拆分权益，禁止超额付款。
 
 赠送包只允许 Manager 提交，成交金额为 0，并在提交事务内直接授予完整权益。M3 不静默加入授信、欠费先上课或负余额能力。
+
+受控 `create_student_package` 按锁内 `request_id` 查找：相同学生、产品、获取类型、生效/失效日和来源说明返回原课包；不同内容拒绝。通用 DocType 创建也必须携带稳定的 request ID，不再为每次保存生成新随机值；同一 ID 的直接重复写入由数据库唯一索引拒绝。购买快照在首次创建时冻结，后续 Plan 改价或改课时不回写历史。
 
 Student Package 的业务状态均派生，不提供普通可编辑状态字段：
 
@@ -123,7 +125,7 @@ Student Package 的业务状态均派生，不提供普通可编辑状态字段�
 - 收款为正；退款关闭为负；撤销为被撤销 Payment 的相反效果。
 - `reversal_of` 建数据库唯一约束；一条 Payment 最多被撤销一次。
 - 同一 Student Package 的所有 Payment 必须与购买快照使用同一币种。M3 仅支持 CNY，不实现外币、汇率或币种兑换。
-- 所有金额运算使用 Frappe/MariaDB Decimal/Currency 精度，禁止 Python float 比较。
+- 当前仅支持人民币，以分（两位小数）为唯一业务精度。产品标准价、成交价快照、Payment 金额和现金效果均先经同一 Decimal 入口校验并规范化，再比较和落库；非零厘及更细输入明确拒绝。四个 Currency DocField 明确两位精度，隔离 MariaDB 实际列为 `DECIMAL(21,2)`；不使用 Python float 运算或比较。
 - 净付款在现有 MariaDB 写锁内按已提交 Payment 的 `cash_effect` 重新汇总；结果不得小于 0，收款后不得超过成交金额。
 - 收款 reversal 导致净付款低于成交金额时，不回写或删除已授予权益，也不恢复已消费课时；该包进入派生的“欠费冻结”，补足付款前不得继续扣课。
 
@@ -177,6 +179,8 @@ M3 不实现通用的“部分退款后继续使用”、按单价折算或自�
 MariaDB 允许唯一索引中存在多个 `NULL`，因此可在保留可选 Link 的同时约束每个非空来源最多一条流水。
 
 人工调整只允许 Manager，必须填写理由并携带系统 request ID；effect 必须为非零整数。负调整必须在锁内重算余额，并拒绝任何会把包余额降到 0 以下的操作。尚未撤销退款关闭的课包拒绝普通人工调整。旧流水永不覆盖。
+
+锁内读取该课包所有 Credit Entry 后，任何声称是初始授予的行都要核对学生、课包、产品及课程快照、操作类型、来源、effect 和唯一幂等键。只有恰好一条完整匹配才可作为合法 grant；多条或任一字段畸形均报“初始权益异常”，不将其效果当作可用余额。已存在 grant 但 `activated_at` 缺失时，补款不得按当前时间补写 FIFO 时间，整个付款请求回滚。
 
 4D 的受控幂等键固定为：退款收回 `payment-refund-reclaim:<refund-payment>`、退款 reversal 恢复 `payment-reversal-restore:<refund-reversal-payment>`、人工调整 `manual-adjustment:<request-id>`。相同键相同内容复用原结果，不同内容拒绝；Credit Entry 唯一索引继续作为并发最终防线。
 
@@ -273,7 +277,7 @@ M3 继续复用 M1/M2 的 MariaDB 站点级 `SELECT ... FOR UPDATE` 写锁，不
 
 请求内先锁定，再读取当前 Payment/Credit 汇总，再验证并写入。数据库唯一约束是 API 重试和并发请求的最终兜底。余额仅剩 1 时两个并发课消最多一个成功；另一个必须重新读取到 0 并整体失败。等待锁期间文档版本发生变化的旧请求沿用 M1/M2 的保护策略整体回滚，行政 fresh retry 后再依据锁内最新状态完成；不得把旧快照继续写入。
 
-`Student Package.request_id`、`Payment.request_id` 和 `Credit Entry.idempotency_key` 由客户端一次性生成或服务器受控生成，表单只读、`no_copy`、不可普通修改，并建立数据库唯一约束。相同键、相同内容返回原结果；相同键、不同内容拒绝。
+`Student Package.request_id` 必须由首次业务请求确定并在重试中保持不变；`Payment.request_id` 和 `Credit Entry.idempotency_key` 由客户端一次性生成或服务器受控生成。字段表单只读、`no_copy`、不可普通修改，并建立数据库唯一约束。受控 API 对相同键、相同内容返回原结果，对相同键、不同内容拒绝。
 
 ## 权限
 

@@ -27,6 +27,7 @@ class MXPayment(SchedulingDocument):
         amount = decimal_amount(self.amount)
         if amount <= 0:
             frappe.throw("付款金额必须大于 0。")
+        self.amount = amount
         if self.currency != "CNY":
             frappe.throw("M3 当前仅支持人民币 CNY。")
         if self.operation_type == "收款":
