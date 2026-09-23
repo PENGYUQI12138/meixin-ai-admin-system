@@ -20,10 +20,11 @@ async function mx_show_plan_preview(frm) {
 	const price = frappe.format(plan.standard_price, { fieldtype: "Currency", options: "CNY", precision: 2 }, { only_value: true });
 	wrapper.html(`<div class="alert alert-info">产品：${mx_safe(plan.plan_name)}；课程：${mx_safe(course?.course_name)}；` +
 		`标准课时：${mx_safe(plan.standard_credits)}；标准价格：${mx_safe(price)}。` +
+		(frm.doc.acquisition_type === "赠送" ? "赠送成交金额为 ¥0.00，不产生收款；" : "") +
 		"保存时服务器会重新核对产品并冻结成交快照。</div>");
 }
 
-async function mx_create_purchase(frm) {
+async function mx_create_package(frm) {
 	if (frm._mx_purchase_pending) return;
 	if (!frm.doc.student || !frm.doc.package_plan || !frm.doc.effective_from) {
 		frappe.msgprint("请选择学生、课包产品和生效日期。");
@@ -35,7 +36,7 @@ async function mx_create_purchase(frm) {
 			method: "meixin_admin.entitlements.create_student_package",
 			args: {
 				student: frm.doc.student, package_plan: frm.doc.package_plan,
-				acquisition_type: "购买", effective_from: frm.doc.effective_from,
+				acquisition_type: frm.doc.acquisition_type, effective_from: frm.doc.effective_from,
 				expires_on: frm.doc.expires_on, source_reference: frm.doc.source_reference,
 				request_id: frm._mx_purchase_request_id,
 			},
@@ -82,17 +83,22 @@ function mx_open_receipt(frm, view) {
 function mx_open_reversal(frm, row) {
 	frm._mx_reversal_ids ??= {};
 	const request_id = frm._mx_reversal_ids[row.name] ??= crypto.randomUUID();
+	const refund = row.operation_type === "退款关闭课包";
+	const title = refund ? "撤销退款关闭" : "撤销收款";
 	let pending = false;
 	const dialog = new frappe.ui.Dialog({
-		title: "撤销收款",
+		title,
 		fields: [
 			{ fieldtype: "HTML", fieldname: "summary", options:
-				`<div class="alert alert-warning">确认撤销原收款 ${mx_safe(row.name)}？` +
-				`实收 ${mx_safe(row.cash_effect)}，方式 ${mx_safe(row.payment_method)}，时间 ${mx_safe(row.paid_at)}。` +
-				"原记录会保留并新增反向流水；若因此欠费，剩余课时冻结，已消费课时不会恢复。</div>" },
+				(refund ? `<div class="alert alert-warning">确认撤销退款关闭 ${mx_safe(row.name)}？` +
+					`原退款金额 ${mx_safe(row.amount)}，原收回课时 ${mx_safe(row.credits_reclaimed)}。` +
+					"将追加反向 Payment，并仅恢复原退款当时收回的权益快照；退款前已消费课时不恢复。原流水保留。</div>" :
+					`<div class="alert alert-warning">确认撤销原收款 ${mx_safe(row.name)}？` +
+					`实收 ${mx_safe(row.cash_effect)}，方式 ${mx_safe(row.payment_method)}，时间 ${mx_safe(row.paid_at)}。` +
+					"原记录会保留并新增反向流水；若因此欠费，剩余课时冻结，已消费课时不会恢复。</div>") },
 			{ fieldtype: "Small Text", fieldname: "reason", label: "撤销原因", reqd: 1 },
 		],
-		primary_action_label: "确认撤销收款",
+		primary_action_label: `确认${title}`,
 		primary_action: async (values) => {
 			if (pending) return;
 			if (!values.reason?.trim()) return frappe.msgprint("请填写撤销原因。");
@@ -145,6 +151,45 @@ function mx_open_refund_close(frm, view) {
 	dialog.show();
 }
 
+function mx_open_adjustment(frm, view) {
+	const request_id = frm._mx_adjust_id ??= crypto.randomUUID();
+	let pending = false;
+	const dialog = new frappe.ui.Dialog({
+		title: "人工调整课时",
+		fields: [
+			{ fieldtype: "HTML", fieldname: "summary", options:
+				`<div class="alert alert-warning">学生：${mx_safe(view.student)}；课包：${mx_safe(frm.doc.name)}；` +
+				`当前派生余额：${mx_safe(view.remaining_credits)} 课时。` +
+				"仅追加不可变审计流水；负调整不能造成负余额，提交时服务器会重新计算。</div>" },
+			{ fieldtype: "Select", fieldname: "direction", label: "调整方向", options: "增加\n减少", reqd: 1 },
+			{ fieldtype: "Int", fieldname: "quantity", label: "课时数（正整数）", reqd: 1 },
+			{ fieldtype: "Small Text", fieldname: "reason", label: "调整原因", reqd: 1 },
+		],
+		primary_action_label: "确认人工调整",
+		primary_action: async (values) => {
+			if (pending) return;
+			if (!values.reason?.trim()) return frappe.msgprint("请填写调整原因。");
+			if (!Number.isSafeInteger(Number(values.quantity)) || Number(values.quantity) <= 0) {
+				return frappe.msgprint("课时数必须是正整数。");
+			}
+			pending = true;
+			try {
+				await frappe.call({ method: "meixin_admin.entitlements.adjust_credits", args: {
+					student_package: frm.doc.name,
+					effect: `${values.direction === "减少" ? "-" : ""}${values.quantity}`,
+					reason: values.reason, request_id,
+				} });
+				delete frm._mx_adjust_id;
+				dialog.hide();
+				await frm.reload_doc();
+			} finally {
+				pending = false;
+			}
+		},
+	});
+	dialog.show();
+}
+
 frappe.ui.form.on("MX Student Package", {
 	setup(frm) {
 		frm.set_query("student", () => ({ filters: { enabled: 1 } }));
@@ -154,7 +199,8 @@ frappe.ui.form.on("MX Student Package", {
 	onload(frm) {
 		if (!frm.is_new()) return;
 		frm._mx_purchase_request_id = crypto.randomUUID();
-		frm.set_value("acquisition_type", "购买");
+		const manager = frappe.session.user === "Administrator" || frappe.user_roles.includes("Meixin Manager");
+		if (frm.doc.acquisition_type !== "赠送" || !manager) frm.set_value("acquisition_type", "购买");
 		if (!frm.doc.effective_from) frm.set_value("effective_from", frappe.datetime.get_today());
 	},
 
@@ -168,13 +214,19 @@ frappe.ui.form.on("MX Student Package", {
 		if (frm.is_new()) {
 			frm.disable_save();
 			frm.set_df_property("acquisition_type", "read_only", 1);
-			frm.set_intro("购买/续费始终新建课包；请核对产品预览后创建草稿，再点击原生“提交”。", "blue");
-			frm.add_custom_button("创建购买草稿", () => mx_create_purchase(frm));
+			const gift = frm.doc.acquisition_type === "赠送";
+			frm.set_intro(gift ? "赠送课包成交金额为零、不产生收款；请核对产品后创建草稿，再由 Manager 原生“提交”。" :
+				"购买/续费始终新建课包；请核对产品预览后创建草稿，再点击原生“提交”。", "blue");
+			frm.add_custom_button(gift ? "创建赠送草稿" : "创建购买草稿", () => mx_create_package(frm));
 			await mx_show_plan_preview(frm);
 			return;
 		}
 		frm.add_custom_button("续费/新购课包", () => frappe.new_doc("MX Student Package", {
 			student: frm.doc.student, package_plan: frm.doc.package_plan,
+		}));
+		const manager = frappe.session.user === "Administrator" || frappe.user_roles.includes("Meixin Manager");
+		if (manager) frm.add_custom_button("赠送课包", () => frappe.new_doc("MX Student Package", {
+			student: frm.doc.student, package_plan: frm.doc.package_plan, acquisition_type: "赠送",
 		}));
 		const name = frm.doc.name;
 		try {
@@ -183,17 +235,19 @@ frappe.ui.form.on("MX Student Package", {
 				args: { student_package: name, include_entries: 1 },
 			});
 			if (frm.doc.name !== name) return;
-			const manager = frappe.session.user === "Administrator" || frappe.user_roles.includes("Meixin Manager");
 			const reversed = new Set((view.payments || []).map((row) => row.reversal_of).filter(Boolean));
 			const credits = (view.credits || []).map((row) => `<tr><td>${mx_safe(row.creation)}</td>` +
 				`<td>${mx_safe(row.operation_type)}</td><td>${mx_safe(row.effect)}</td>` +
-				`<td>${mx_safe(row.source_doctype)} ${mx_safe(row.source_name)}</td></tr>`).join("");
+				`<td>${mx_safe(row.source_doctype)} ${mx_safe(row.source_name)}</td>` +
+				`<td>${mx_safe(row.reason)}</td></tr>`).join("");
 			const payments = (view.payments || []).map((row) => `<tr><td>${mx_safe(row.paid_at)}</td>` +
 				`<td>${mx_safe(row.operation_type)}</td><td>${mx_safe(row.cash_effect)}</td>` +
 				`<td>${mx_safe(row.payment_method)}</td><td>${mx_safe(row.name)}</td><td>${mx_safe(row.note)}</td>` +
 				`<td>${row.reversal_of ? `撤销 ${mx_safe(row.reversal_of)}` : reversed.has(row.name) ? "已撤销" :
-					manager && row.operation_type === "收款" && view.status !== "已退款关闭" ?
-					`<button class="btn btn-xs btn-default mx-reverse-payment" data-payment="${mx_safe(row.name)}">撤销收款</button>` : ""}</td></tr>`).join("");
+					manager && (row.operation_type === "收款" && view.status !== "已退款关闭" ||
+						row.operation_type === "退款关闭课包" && view.status === "已退款关闭") ?
+					`<button class="btn btn-xs btn-default mx-reverse-payment" data-payment="${mx_safe(row.name)}">` +
+					`${row.operation_type === "退款关闭课包" ? "撤销退款关闭" : "撤销收款"}</button>` : ""}</td></tr>`).join("");
 			wrapper.html(`<div class="mb-3"><strong>派生状态：</strong>${mx_safe(view.status)}　` +
 				`<strong>应收：</strong>${mx_safe(view.deal_amount)}　` +
 				`<strong>已付净额：</strong>${mx_safe(view.paid_amount)}　` +
@@ -204,8 +258,8 @@ frappe.ui.form.on("MX Student Package", {
 				`<th>支付时间</th><th>操作</th><th>现金效果</th><th>方式</th><th>单号</th><th>原因/备注</th><th>关联/操作</th></tr></thead>` +
 				`<tbody>${payments || '<tr><td colspan="7">暂无付款记录</td></tr>'}</tbody></table>` +
 				`<h5>课时权益流水</h5><table class="table table-bordered table-sm"><thead><tr>` +
-				`<th>创建时间</th><th>权益操作</th><th>课时变化</th><th>来源单据</th></tr></thead>` +
-				`<tbody>${credits || '<tr><td colspan="4">暂无权益流水</td></tr>'}</tbody></table>`);
+				`<th>创建时间</th><th>权益操作</th><th>课时变化</th><th>来源单据</th><th>原因</th></tr></thead>` +
+				`<tbody>${credits || '<tr><td colspan="5">暂无权益流水</td></tr>'}</tbody></table>`);
 			if (manager) wrapper.find(".mx-reverse-payment").on("click", (event) => {
 				const row = view.payments.find((item) => item.name === event.currentTarget.dataset.payment);
 				if (row) mx_open_reversal(frm, row);
@@ -217,6 +271,10 @@ frappe.ui.form.on("MX Student Package", {
 			if (manager && frm.doc.docstatus === 1 && frm.doc.acquisition_type === "购买" &&
 				view.status !== "已退款关闭" && view.paid_amount_value !== "0.00") {
 				frm.add_custom_button("退款关闭课包", () => mx_open_refund_close(frm, view));
+			}
+			if (manager && frm.doc.docstatus === 1 && view.status !== "已退款关闭" &&
+				view.remaining_credits !== null) {
+				frm.add_custom_button("人工调整课时", () => mx_open_adjustment(frm, view));
 			}
 			if (view.credits?.length) frm.add_custom_button("查看权益流水", () => {
 				frappe.route_options = { student_package: name };

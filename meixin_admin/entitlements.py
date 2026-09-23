@@ -124,14 +124,14 @@ def package_overview(student_package, include_entries=0):
     credit_filters = {"student_package": package.name}
     payments = frappe.get_list(
         "MX Payment", filters=payment_filters,
-        fields=["name", "operation_type", "cash_effect", "reversal_of", "payment_method",
-                "paid_at", "reason"], order_by="creation desc, name desc", limit_page_length=0,
+        fields=["name", "operation_type", "amount", "cash_effect", "reversal_of", "payment_method",
+                "paid_at", "reason", "credits_reclaimed"], order_by="creation desc, name desc", limit_page_length=0,
     )
     credits = frappe.get_list(
         CREDIT_ENTRY_DOCTYPE, filters=credit_filters,
         fields=["name", "creation", "student", "student_package", "package_plan",
                 "plan_name_snapshot", "course", "course_name_snapshot", "operation_type",
-                "effect", "source_doctype", "source_name", "idempotency_key"],
+                "effect", "source_doctype", "source_name", "reason", "idempotency_key"],
         order_by="creation desc, name desc", limit_page_length=0,
     )
     if (len(payments) != frappe.db.count("MX Payment", payment_filters)
@@ -194,13 +194,16 @@ def package_overview(student_package, include_entries=0):
             {"name": row.name, "paid_at": str(row.paid_at or ""),
              "operation_type": row.operation_type, "payment_method": row.payment_method,
              "cash_effect": f"¥{decimal_amount(row.cash_effect):,.2f}",
+             "amount": f"¥{decimal_amount(row.amount):,.2f}",
+             "credits_reclaimed": cint(row.credits_reclaimed),
              "note": row.reason or "", "reversal_of": row.reversal_of or ""}
             for row in payments
         ] if cint(include_entries) else [],
         "credits": [
             {"name": row.name, "creation": str(row.creation),
              "operation_type": row.operation_type, "effect": row.effect,
-             "source_doctype": row.source_doctype, "source_name": row.source_name}
+             "source_doctype": row.source_doctype, "source_name": row.source_name,
+             "reason": row.reason or ""}
             for row in credits
         ] if cint(include_entries) else [],
     }

@@ -1677,6 +1677,61 @@ class TestM3Schema(unittest.TestCase):
             "student_package": package.name, "operation_type": "退款收回",
         }), 1)
 
+    def test_87_refund_reversal_overview_uses_original_reclaim_snapshot(self):
+        package = self.purchase_and_activate(plan=self.new_plan(price="1.23"))
+        self.set_rule("课消")
+        self.execution().submit()
+        refund = payments.refund_close_package(package.name, "1.00", "原退款有误", uuid.uuid4().hex)
+        closed = entitlements.package_overview(package.name, 1)
+        row = next(row for row in closed["payments"] if row["name"] == refund)
+        self.assertEqual((row["amount"], row["credits_reclaimed"]), ("¥1.00", 19))
+        request_id = uuid.uuid4().hex
+        reversal = payments.reverse_payment(refund, "撤销错误退款", request_id)
+        self.assertEqual(payments.reverse_payment(refund, "撤销错误退款", request_id), reversal)
+        view = entitlements.package_overview(package.name, 1)
+        self.assertEqual((view["status"], view["paid_amount_value"], view["remaining_credits"]),
+                         ("生效", "1.23", 19))
+        self.assertEqual(next(row for row in view["payments"] if row["name"] == reversal)["reversal_of"],
+                         refund)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {
+            "student_package": package.name, "operation_type": "M2 课消扣减",
+        }), 1)
+
+    def test_88_manager_gift_service_has_zero_cash_and_one_grant(self):
+        manager = self.user("Meixin Manager")
+        frappe.set_user(manager)
+        request_id = uuid.uuid4().hex
+        name = entitlements.create_student_package(
+            self.student.name, self.plan.name, "赠送", nowdate(),
+            source_reference="5C-2 赠送说明", request_id=request_id,
+        )
+        self.assertEqual(entitlements.create_student_package(
+            self.student.name, self.plan.name, "赠送", nowdate(),
+            source_reference="5C-2 赠送说明", request_id=request_id,
+        ), name)
+        package = frappe.get_doc("MX Student Package", name).submit()
+        self.assertEqual((package.acquisition_type, package.deal_amount, package.credits_granted),
+                         ("赠送", 0, 20))
+        self.assertEqual(frappe.db.count("MX Payment", {"student_package": name}), 0)
+        self.assertEqual(entitlements.package_overview(name)["remaining_credits"], 20)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {
+            "student_package": name, "operation_type": "赠送授予",
+        }), 1)
+
+    def test_89_adjustment_overview_audits_reason_and_rejects_overdraw(self):
+        package = self.package("赠送").submit()
+        positive_id = uuid.uuid4().hex
+        first = entitlements.adjust_credits(package.name, 3, "补发课时", positive_id)
+        self.assertEqual(entitlements.adjust_credits(package.name, 3, "补发课时", positive_id), first)
+        entitlements.adjust_credits(package.name, -4, "纠正多余权益", uuid.uuid4().hex)
+        self.assertIn("小于 0", self.rejected(lambda: entitlements.adjust_credits(
+            package.name, -20, "不得负数", uuid.uuid4().hex,
+        )))
+        view = entitlements.package_overview(package.name, 1)
+        self.assertEqual(view["remaining_credits"], 19)
+        self.assertEqual({row["reason"] for row in view["credits"] if row["operation_type"] == "人工调整"},
+                         {"补发课时", "纠正多余权益"})
+
 
 if __name__ == "__main__":
     unittest.main()
