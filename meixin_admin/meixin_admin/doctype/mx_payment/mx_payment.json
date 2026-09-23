@@ -121,7 +121,7 @@
   {
    "fieldname": "reason",
    "fieldtype": "Small Text",
-   "label": "原因"
+   "label": "原因/备注"
   },
   {
    "fieldname": "credits_reclaimed",

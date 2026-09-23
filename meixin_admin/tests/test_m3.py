@@ -1546,6 +1546,99 @@ class TestM3Schema(unittest.TestCase):
             self.assertEqual((permission.read, permission.create, permission.write, permission.delete),
                              (1, 0, 0, 0))
 
+    def test_81_purchase_and_renewal_use_stable_request_ids(self):
+        plan = self.new_plan(price="1.23")
+        first_id = uuid.uuid4().hex
+        first = entitlements.create_student_package(
+            self.student.name, plan.name, "购买", nowdate(), request_id=first_id,
+        )
+        frappe.db.set_value("MX Student Package", first, "demo_batch", self.batch)
+        self.assertEqual(entitlements.create_student_package(
+            self.student.name, plan.name, "购买", nowdate(), request_id=first_id,
+        ), first)
+        self.assertIn("不同课包内容", self.rejected(lambda: entitlements.create_student_package(
+            self.student.name, plan.name, "购买", add_days(nowdate(), 1), request_id=first_id,
+        )))
+        frappe.get_doc("MX Student Package", first).submit()
+        renewed = entitlements.create_student_package(
+            self.student.name, plan.name, "购买", nowdate(), request_id=uuid.uuid4().hex,
+        )
+        frappe.db.set_value("MX Student Package", renewed, "demo_batch", self.batch)
+        frappe.get_doc("MX Student Package", renewed).submit()
+        self.assertNotEqual(first, renewed)
+        self.assertEqual(frappe.db.count("MX Student Package", {
+            "student": self.student.name, "package_plan": plan.name,
+        }), 2)
+
+    def test_82_receipt_notes_partial_full_retry_and_derived_due(self):
+        package = self.package(plan=self.new_plan(price="1.23")).submit()
+        paid_at = now_datetime()
+        first_id = uuid.uuid4().hex
+        first = payments.record_payment(package.name, "0.10", "现金", paid_at, first_id, "首款")
+        frappe.db.set_value("MX Payment", first, "demo_batch", self.batch)
+        self.assertEqual(payments.record_payment(package.name, "0.10", "现金", paid_at, first_id, "首款"), first)
+        self.assertIn("不同付款内容", self.rejected(lambda: payments.record_payment(
+            package.name, "0.10", "现金", paid_at, first_id, "改动备注",
+        )))
+        partial = entitlements.package_overview(package.name, 1)
+        self.assertEqual((partial["status"], partial["paid_amount"], partial["due_amount"]),
+                         ("待付款", "¥0.10", "¥1.13"))
+        self.assertEqual(partial["payments"][0]["note"], "首款")
+        second_id = uuid.uuid4().hex
+        second = payments.record_payment(package.name, "1.13", "银行转账", paid_at, second_id)
+        frappe.db.set_value("MX Payment", second, "demo_batch", self.batch)
+        self.assertEqual(payments.record_payment(package.name, "1.13", "银行转账", paid_at, second_id), second)
+        full = entitlements.package_overview(package.name, 1)
+        self.assertEqual((full["status"], full["paid_amount"], full["due_amount"],
+                          full["remaining_credits"]), ("生效", "¥1.23", "¥0.00", 20))
+        self.assertEqual(len(full["payments"]), 2)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {
+            "student_package": package.name, "operation_type": "购买授予",
+        }), 1)
+
+    def test_83_overpayment_rolls_back_and_fresh_retry_succeeds(self):
+        package = self.package(plan=self.new_plan(price="1.23")).submit()
+        request_id = uuid.uuid4().hex
+        paid_at = now_datetime()
+        self.assertIn("超", self.rejected(lambda: payments.record_payment(
+            package.name, "1.24", "现金", paid_at, request_id,
+        )))
+        self.assertEqual(frappe.db.count("MX Payment", {"student_package": package.name}), 0)
+        self.assertEqual(frappe.db.count("MX Lesson Credit Entry", {"student_package": package.name}), 0)
+        receipt = payments.record_payment(package.name, "1.23", "现金", paid_at, request_id)
+        frappe.db.set_value("MX Payment", receipt, "demo_batch", self.batch)
+        self.assertEqual(entitlements.package_overview(package.name)["remaining_credits"], 20)
+
+    def test_84_purchase_service_role_and_user_permission_boundary(self):
+        for role in ("Meixin Scheduler", "Meixin Manager"):
+            member = self.user(role)
+            frappe.set_user(member)
+            name = entitlements.create_student_package(
+                self.student.name, self.plan.name, "购买", nowdate(), request_id=uuid.uuid4().hex,
+            )
+            frappe.set_user("Administrator")
+            frappe.db.set_value("MX Student Package", name, "demo_batch", self.batch)
+        denied = (self.user("System Manager"), self.user(), "Guest")
+        for user in denied:
+            frappe.set_user(user)
+            self.rejected(lambda: entitlements.create_student_package(
+                self.student.name, self.plan.name, "购买", nowdate(), request_id=uuid.uuid4().hex,
+            ), frappe.PermissionError)
+        frappe.set_user("Administrator")
+        other = frappe.get_doc({
+            "doctype": "MX Student", "student_name": "5B权限参照学生",
+            "guardian_phone": "00000000004", "enabled": 1, "demo_batch": self.batch,
+        }).insert()
+        restricted = self.user("Meixin Scheduler")
+        frappe.get_doc({
+            "doctype": "User Permission", "user": restricted, "allow": "MX Student",
+            "for_value": other.name, "apply_to_all_doctypes": 1,
+        }).insert(ignore_permissions=True)
+        frappe.set_user(restricted)
+        self.rejected(lambda: entitlements.create_student_package(
+            self.student.name, self.plan.name, "购买", nowdate(), request_id=uuid.uuid4().hex,
+        ), frappe.PermissionError)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -124,7 +124,8 @@ def package_overview(student_package, include_entries=0):
     credit_filters = {"student_package": package.name}
     payments = frappe.get_list(
         "MX Payment", filters=payment_filters,
-        fields=["name", "operation_type", "cash_effect", "reversal_of"], limit_page_length=0,
+        fields=["name", "operation_type", "cash_effect", "reversal_of", "payment_method",
+                "paid_at", "reason"], order_by="creation desc, name desc", limit_page_length=0,
     )
     credits = frappe.get_list(
         CREDIT_ENTRY_DOCTYPE, filters=credit_filters,
@@ -138,6 +139,8 @@ def package_overview(student_package, include_entries=0):
         frappe.throw("无权查看该课包的完整账务明细。", frappe.PermissionError)
 
     paid = sum((decimal_amount(row.cash_effect) for row in payments), Decimal("0"))
+    deal = decimal_amount(package.deal_amount)
+    due = max(deal - paid, Decimal("0"))
     balance = sum(cint(row.effect) for row in credits)
     try:
         grant = _initial_grant(package, credits)
@@ -158,12 +161,12 @@ def package_overview(student_package, include_entries=0):
         status = "已退款关闭"
     elif not valid_grant:
         status = ("待付款" if not credits and package.acquisition_type == "购买"
-                  and paid < decimal_amount(package.deal_amount) else "初始权益异常")
+                  and paid < deal else "初始权益异常")
     elif balance < 0 or not package.effective_from or (
         package.expires_on and getdate(package.expires_on) < getdate(package.effective_from)
     ):
         status = "课包资料异常"
-    elif package.acquisition_type == "购买" and paid < decimal_amount(package.deal_amount):
+    elif package.acquisition_type == "购买" and paid < deal:
         status = "欠费冻结"
     elif today < getdate(package.effective_from):
         status = "尚未生效"
@@ -181,9 +184,18 @@ def package_overview(student_package, include_entries=0):
         "effective_from": str(package.effective_from or ""),
         "expires_on": str(package.expires_on or ""),
         "status": status,
-        "deal_amount": f"¥{decimal_amount(package.deal_amount):,.2f}",
+        "deal_amount": f"¥{deal:,.2f}",
         "paid_amount": f"¥{paid:,.2f}",
+        "due_amount": f"¥{due:,.2f}",
+        "due_amount_value": f"{due:.2f}",
         "remaining_credits": balance if valid_grant else None,
+        "payments": [
+            {"name": row.name, "paid_at": str(row.paid_at or ""),
+             "operation_type": row.operation_type, "payment_method": row.payment_method,
+             "cash_effect": f"¥{decimal_amount(row.cash_effect):,.2f}",
+             "note": row.reason or ""}
+            for row in payments
+        ] if cint(include_entries) else [],
         "credits": [
             {"name": row.name, "creation": str(row.creation),
              "operation_type": row.operation_type, "effect": row.effect,

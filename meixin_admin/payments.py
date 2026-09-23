@@ -131,13 +131,14 @@ def finalize_payment(payment):
         frappe.throw("不支持的付款操作类型。")
 
 
-def _same_payment(existing, *, student_package, amount, payment_method, paid_at):
+def _same_payment(existing, *, student_package, amount, payment_method, paid_at, note=""):
     return (
         existing.student_package == student_package
         and existing.operation_type == "收款"
         and decimal_amount(existing.amount) == decimal_amount(amount)
         and existing.payment_method == payment_method
         and get_datetime(existing.paid_at) == get_datetime(paid_at)
+        and (existing.reason or "") == note
     )
 
 
@@ -161,13 +162,16 @@ def _finish_existing(existing):
 
 
 @frappe.whitelist()
-def record_payment(student_package, amount, payment_method, paid_at, request_id):
+def record_payment(student_package, amount, payment_method, paid_at, request_id, note=None):
     """Idempotent ordinary-receipt API for Desk and external retries."""
     require_member()
     frappe.has_permission(PAYMENT_DOCTYPE, "create", throw=True)
     request_id = (request_id or "").strip()
     if not request_id or len(request_id) > 140:
         frappe.throw("系统请求标识格式不正确。")
+    note = (note or "").strip()
+    if len(note) > 500:
+        frappe.throw("收款备注不能超过 500 字。")
     with schedule_write():
         existing_name = frappe.db.get_value(PAYMENT_DOCTYPE, {"request_id": request_id})
         if existing_name:
@@ -175,7 +179,7 @@ def record_payment(student_package, amount, payment_method, paid_at, request_id)
             existing.check_permission("read")
             if not _same_payment(
                 existing, student_package=student_package, amount=amount,
-                payment_method=payment_method, paid_at=paid_at,
+                payment_method=payment_method, paid_at=paid_at, note=note,
             ):
                 frappe.throw("相同请求标识包含不同付款内容，已停止写入。", title="付款幂等冲突")
             return _finish_existing(existing)
@@ -186,6 +190,7 @@ def record_payment(student_package, amount, payment_method, paid_at, request_id)
             "amount": decimal_amount(amount),
             "payment_method": payment_method,
             "paid_at": get_datetime(paid_at),
+            "reason": note,
             "request_id": request_id,
         }).insert().submit()
         return payment.name
