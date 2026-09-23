@@ -1459,6 +1459,32 @@ class TestM3Schema(unittest.TestCase):
         self.assertIn("初始权益异常", self.rejected(execution.submit))
         self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"execution": execution.name}), 0)
 
+    def test_76_money_rejects_three_decimal_places_even_when_zero(self):
+        self.assertIn("精度", self.rejected(lambda: self.new_plan(price="1.000")))
+        package = self.package(plan=self.new_plan(price="0.01")).submit()
+        self.assertIn("精度", self.rejected(lambda: self.payment(package, "1.000")))
+        self.assertEqual(frappe.db.count("MX Payment", {"student_package": package.name}), 0)
+
+    def test_77_currency_float_boundary_round_trips_exact_cents(self):
+        from meixin_admin.money import decimal_amount
+
+        ceiling = Decimal("9999999999999.99")
+        self.assertIn("范围", self.rejected(lambda: decimal_amount("10000000000000.00")))
+        plan = self.new_plan(price=str(ceiling))
+        package = self.package(plan=plan).submit()
+        receipt = self.payment(package, str(ceiling)).submit()
+        for doctype, name, field in (
+            ("MX Package Plan", plan.name, "standard_price"),
+            ("MX Student Package", package.name, "deal_amount"),
+            ("MX Payment", receipt.name, "amount"),
+            ("MX Payment", receipt.name, "cash_effect"),
+        ):
+            self.assertEqual(Decimal(str(frappe.db.get_value(doctype, name, field))), ceiling)
+        self.assertEqual(payments.locked_net_paid(package.name), ceiling)
+        self.assertEqual(frappe.db.count(
+            "MX Lesson Credit Entry", {"student_package": package.name, "operation_type": "购买授予"},
+        ), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
