@@ -1,6 +1,6 @@
-# 美心行政 M1 / M2 开发进度
+# 美心行政 M1 / M2 / M3 开发进度
 
-最后更新：2026-09-21（Asia/Shanghai）
+最后更新：2026-09-23（Asia/Shanghai）
 
 ## 恢复工作规则
 
@@ -13,6 +13,127 @@ git log --oneline -5
 ```
 
 只从“下一步操作”继续。每完成一个独立阶段，立即更新本文件；重要节点执行 Git commit。不得把未运行的检查记为通过，不得在 `frontend` 运行测试套件。
+
+## M3 当前状态
+
+### 阶段 2：设计与 Private Git 写入验证（已完成）
+
+- M2 final 已完成、正式部署并冻结；本地 `main`、`origin/main` 和 GitHub `main` 均为 `615316ee991a172f198a378b2fa33db2ae60b000`。
+- GitHub 仓库已转为 Private；阶段开始前 `git ls-remote origin refs/heads/main` 成功，Private 读取链路正常。
+- 已从 M2 final 创建独立分支 `m3-enrollment-payment-package`，不 rebase、reset、amend、force push 或改写 M1/M2 历史。
+- M3 采用 `MX Package Plan`、`MX Student Package`、`MX Payment`、`MX Lesson Credit Entry` 四个核心 DocType，以及 `entitlements.py`、`payments.py` 两个服务模块。
+- M3 严格分离现金、课时权益和 M2 课消事实；采用满款一次性授予、退款关闭课包、禁止负余额、精确 Course、FEFO/FIFO、多层幂等和同事务 M2 联动。
+- 完整设计见 `docs/M3_DESIGN.md`。第一个 M3 checkpoint 为 `8d6f346`，只包含设计和状态文档，没有 schema、迁移、容器或正式站业务数据修改。
+- 已普通执行 `git push -u origin m3-enrollment-payment-package`；Private GitHub 首次真实写入成功，远端同名分支已建立并正常跟踪，没有 connection reset 或鉴权错误。
+
+### 阶段 3：Schema、唯一约束与权限骨架（已完成）
+
+- 新增 `MX Package Plan`、`MX Student Package`、`MX Payment`、`MX Lesson Credit Entry` 四个 DocType，以及 `entitlements.py`、`payments.py` 两个最小服务模块骨架。
+- Package Plan 仅 Manager 可维护；Scheduler 可创建普通 Student Package 和普通收款，但不能创建赠送包、退款关闭或撤销；Credit Entry 对两个业务角色均只读。
+- Student Package 和 Payment 的 `request_id`、Credit Entry 的 `idempotency_key`、非空 `m2_consumption_entry`、非空 `reversal_of`，以及 Payment 非空 `reversal_of` 均已通过 DocType `unique` 建立 MariaDB 唯一索引。
+- 系统 request ID 为隐藏只读字段并由服务器生成；课包快照由服务器从 Package Plan 生成；Payment 的学生、币种和 `cash_effect` 由服务器推导，不信任前端输入。
+- 新 DocType 已加入业务角色 gate、permission query hooks 和禁止 DocShare 集合；Credit Entry 控制器拒绝任何直接新增、普通修改和删除。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过。仅对隔离站 `test_meixin_m1.localhost` migrate，成功同步四个 DocType、索引、DocPerm 和 `after_migrate`；正式 `frontend` 未 migrate、未重建、未写入。
+- 隔离 MariaDB 已实际核对全部唯一索引和四个 DocType 的 DocPerm，不只依赖源码声明。
+- 新增 4 项 M3 schema 骨架测试，覆盖产品/购买快照、系统 request ID、Scheduler 越权拒绝、服务器现金效果和 Credit Entry 直接写入拒绝。完整结果为 `Ran 56 tests in 15.535s / OK`：M1 30/30、M2 22/22、M3 4/4。
+
+### 阶段 4A：Student Package、普通付款与满款激活（已完成）
+
+- 购买型 Student Package 提交后不授予权益；普通收款支持一次付清和分次付款，锁内按 Decimal 重新汇总已提交 `cash_effect`，拒绝超额和负净付款。
+- 净收款第一次恰好达到成交金额时，通过唯一 `package-grant:<student-package>` 幂等键生成完整 `+N` Credit Entry，并只写一次 `activated_at`；分次付款、双击和 API 重试不会重复 grant。
+- 赠送包继续只允许 Manager，提交时在同一事务直接生成唯一权益；在 4A checkpoint 中，尚未实现的付款撤销和退款关闭曾由 `before_submit` 明确拒绝，避免提前暴露不完整资金流程。
+- 新增受权限保护的 `record_payment` 幂等 API；相同 request ID 和相同内容返回/完成原 Payment，不同内容拒绝。Student Package、Payment、Credit Entry 均继续复用现有 `schedule_write`，没有手动 commit 或新锁服务。
+- 首次并发测试发现锁后普通 SUM 仍读取 MariaDB REPEATABLE READ 旧快照，导致两笔付款完成但未 grant。汇总已改为 locking/current read；随后确认等待前已读取草稿的第二个标准 Document 请求会按 M1/M2 既有策略整体回滚并提示 fresh retry，重试后两笔付款完整、grant 仅一条。
+- 新增 7 项 4A 测试，覆盖待付款、Scheduler 一次付清、分次付款、超额拒绝、API/double-click 幂等、赠送包和并发付款安全重试。最终完整结果为 `Ran 63 tests in 16.932s / OK`：M1 30/30、M2 22/22、M3 11/11。
+- 测试后隔离站 `TEST-M3-%` 的 Package Plan、Student Package、Payment、Credit Entry、Student 和 Course 均为 0。Python 编译和 `git diff --check` 通过；正式 `frontend` 未 migrate、未重建、未写入。
+
+### 阶段 4B：M2 与课时权益同事务联动（已完成）
+
+- 仅在冻结的 `consumption.py` 增加窄调用点：M2 `+1` 决定同步调用权益服务生成唯一 `-1`，`0` 明确不动作，M2 `-1` reversal 同步对原扣减生成唯一 `+1`。
+- 扣减使用 `m2-consume:<M2 Consumption Entry>`，返还使用 `m2-restore:<M2 reversal Consumption Entry>`；应用层核对相同键内容，MariaDB 的 `idempotency_key`、非空 `m2_consumption_entry` 和非空 `reversal_of` 唯一索引继续作为最终防线。
+- reversal 固定返还原 `-1` Credit Entry 所属 Student Package，不重新选包、不覆盖旧流水。所有调用沿用原 `schedule_write` 和 Frappe 请求事务，没有手动 commit、异步任务或新锁服务。
+- 4B 先实现单一合法候选的安全扣减；没有候选或存在多个候选均明确拒绝并整体回滚，不猜测课包。完整 FEFO/FIFO、多原因分类和多课包分配保留到 4C。
+- M2 22 项旧测试只扩充已激活赠送课包夹具，未删除或弱化原断言；并发双提交测试改为真实 `+1`，确认只有一条 M2 决定及一条 M3 扣减。
+- 新增 9 项 4B 测试，覆盖 `+1/0/-1`、决定和 reversal 重试幂等、无合法包、Credit 唯一冲突、reversal 中途失败与 fresh retry。故障注入确认 Execution、M2 和 M3 均不留半成品。
+- 最终完整隔离回归结果为 `Ran 72 tests in 19.271s / OK`：M1 30/30、M2 22/22、M3 20/20。测试后七类 `TEST-%` 业务表均为 0；隔离 MariaDB 再次确认 Credit Entry 三个业务唯一索引存在。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过；正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
+
+### 阶段 4C：多课包 FEFO/FIFO、余额边界与状态诊断（已完成）
+
+- 候选查询在原 `schedule_write` 全站事务锁内锁定该学生全部已提交 Student Package，再以当前 Credit/Payment 流水派生合法 grant、余额、净付款、欠费冻结和退款关闭状态；不读取页面余额、缓存或事务前旧结果。
+- 只接受 Student Package 冻结的 Course 与 M2 Consumption Entry Course 精确相同的包，不读取后来修改的 Package Plan。候选按“最早失效日、无失效日最后、最早 `activated_at`、Student Package name”稳定排序。
+- 有效期使用 M2 冻结的原排课计划开始时间和 Frappe 站点业务日；生效日、失效日均可用，失效日次日才过期。最终套件继续确认隔离站时区为 `Asia/Chongqing`，没有硬编码 UTC 偏移。
+- 购买包有合法 grant 但锁内有效净付款低于成交金额时派生为欠费冻结：不删除剩余权益、不改历史课消，只拒绝新扣减；补足付款后自动恢复资格，原唯一 grant 被复用而不重复授予。
+- 无候选时分别提示无该课程课包、尚未付清、已耗尽、尚未生效、已过期、欠费冻结、退款关闭、初始权益异常或有效期/类型元数据异常。提示只含状态类别和处理建议，不泄露其他课包编号、金额或内部明细。
+- grant 存在但缺少 `activated_at`、重复初始 grant、缺失/倒置有效期等历史异常不参与排序和扣减，必须由 Manager 检查数据；系统不会猜测 FIFO 时间或修写旧流水。
+- 最后一课时并发测试确认两个 M2 `+1` 只能一个成功，最终余额为 0。A/B 并发场景下，等待旧快照的请求按既有 MariaDB 策略整体回滚；fresh retry 在锁内重新读取 A=0 后稳定选择 B，只形成合法 M2/M3 链。
+- 新增 19 项 M3 测试。最终完整隔离回归为 `Ran 91 tests in 23.682s / OK`：M1 30/30、M2 22/22、M3 39/39；包含并发、4B 故障注入和全部 4C 边界。
+- Python 编译、全部 JSON 解析和 `git diff --check` 通过；隔离测试数据已清理。正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
+
+### 阶段 4D：资金纠错、退款关闭与人工权益调整（已完成）
+
+- Payment reversal 只允许 Manager，通过新增不可变“撤销”Payment 抵销原流水；服务器从原 `cash_effect` 推导反向金额，原 Payment 不修改、不删除。非空 `reversal_of` 唯一索引和 request ID 幂等共同保证一条原 Payment 最多一个 reversal。
+- 满款激活后撤销收款会派生为欠费冻结：既有 grant、已消费历史和剩余权益均不回写，只禁止新的 M2 扣减。后续正常补足净付款自动恢复候选资格，唯一 `package-grant:<student-package>` 被复用，未重复授予。
+- “退款关闭课包”由 Manager 新增负现金 Payment；锁内 fresh read 当前净付款和权益余额，同事务追加 `退款收回 -N`。退款金额必须大于 0 且不超过有效净收款；余额为 0 仍可关闭，但不生成零值 Credit Entry。关闭后拒绝新收款、课消和普通人工调整。
+- 退款 reversal 新增反向现金 Payment，并严格按原退款固化的 `credits_reclaimed` 快照追加 `+N` 恢复；不重新计算应恢复课时，不恢复退款前已消费课时。收回和恢复分别使用 `payment-refund-reclaim:<refund>`、`payment-reversal-restore:<reversal>`。
+- Manager 人工权益调整只通过受控 API 追加 `人工调整`流水，要求非零整数、非空原因和 request ID；负调整在锁内重算，允许恰好到 0，拒绝负余额。Scheduler、仅 System Manager、无角色、外部用户、Guest、User Permission 受限用户和 DocShare 绕过均被拒绝。
+- 并发覆盖退款与新课消、撤销与补款、双退款、双负调整、退款 reversal 与新课消。等待中的旧文档按既有版本保护完整回滚，fresh retry 后形成唯一合法顺序；净付款、grant、reclaim、restore 和余额均无重复或负数。
+- 故障注入覆盖 reversal 后续失败、退款收回前/后失败、退款 reversal 恢复失败、人工调整插入失败；每次均确认 Payment/Credit 不留半成品，同一 request ID fresh retry 最终只成功一次。
+- 最终完整隔离回归为 `Ran 114 tests / OK`：M1 30/30、M2 22/22、M3 62/62，包含并发、故障注入和权限边界。正式 `frontend` 未 migrate、未重建、未运行测试、未写入。
+
+### 4D 后独立审计修复（已完成，待独立复审）
+
+- 修复补款复用 grant 时缺失 `activated_at` 被补写当前时间的问题；既有 grant 必须保留真实首次激活时间，否则付款与新流水整体回滚。
+- 人民币金额统一先按 Decimal 的分精度校验，再用于快照、付款、退款、撤销、净额比较与落库；四个 Currency DocField 明确两位精度。隔离站同步后实际列为 `DECIMAL(21,2)`，原五类业务唯一索引保留。
+- 新增 `create_student_package` 稳定 request ID 受控入口；通用 DocType 创建也必须显式提供 request ID，防止每次重试重新生成随机 ID。相同键相同内容复用原课包，不同内容拒绝，并发由现有写锁与数据库唯一约束保护。
+- 所有声称是初始授予的 Credit Entry 均须与课包快照逐字段一致；畸形或重复 grant 在余额可用性判断前报“初始权益异常”，旧流水不修改。
+- 新增 13 项定向测试，覆盖补款回滚、分精度与三笔 `0.01` 满款、产品历史快照、跨 UTC 日期边界、普通付款权限、通用创建入口、并发创建、实际索引以及畸形 grant 对扣课/退款的阻断。隔离站定向 `Ran 13 tests / OK`；完整回归 `Ran 127 tests in 36.705s / OK`（M1 30、M2 22、M3 75）。
+- 隔离站已同步四个 Currency 字段为 `DECIMAL(21,2)`；只读数据库检查确认六个要求的唯一索引均存在。`TEST-M3-` 课包、付款、权益及课消流水计数均为 0，孤立并发创建课包已定向清理。Python 编译、18 个 JSON 解析和 `git diff --check` 通过。正式 `frontend` 未迁移、重建、测试或写入。
+
+### 第二轮复审：金额边界修复（已完成，待独立复审）
+
+- 共用人民币金额入口按输入 Decimal 位数拒绝第三位小数，即使该位为 0（如 `1.000`）；正常 `0.01` 仍可保存。Frappe 16.34 的 Currency 写库路径经 `get_valid_dict`/`flt` 转为 binary64，因此将绝对金额上限收紧为 `9,999,999,999,999.99` 元，使全部允许值的浮点误差低于半分；超出上限明确拒绝。
+- 两项新定向测试在修复前均失败、修复后均通过；隔离站完整回归 `Ran 129 tests in 35.605s / OK`（M1 30、M2 22、M3 77）。上限金额经 Plan、Student Package、Payment `amount`/`cash_effect` 保存重读均保持一致，并只产生一次 grant。正式 `frontend` 未触碰；不 push。
+
+### 阶段 5A：原生只读概览与 Workspace（已完成，待 5B 指令）
+
+- Workspace/Sidebar 新增课包产品、学生已购课包、收款记录、课时权益流水四个入口；学生已购课包使用 Frappe 原生 Script Report 展示服务端派生状态、净已付金额、剩余课时和有效期。Student Package 原生详情增加只读权益流水与来源单据，不新增可编辑余额或状态，也不加入付款、退款、撤销或调整按钮。
+- `package_overview` 在服务端检查业务角色、单据读取权及完整 Payment/Credit 可见性；金额以人民币两位展示。写入流程仍只按原事务锁内计算，不使用页面派生结果。新增 3 项 M3 测试覆盖金额/状态/来源、角色和 User Permission、四入口及 Credit 只读。
+- 仅在 `test_meixin_m1.localhost` 隔离站 migrate；独立 Edge/Playwright 页面验收实际点击四入口，核对四类列表和 Plan、Package、Payment、Credit 详情。虚构测试包显示 `¥1.23` 应收/已付、20 剩余课时与唯一购买授予来源；Scheduler 可见但无取消入口，User Permission 受限账号在报表中不可见且直达详情被拒绝。
+- 浏览器控制台未见 5A 脚本异常；有 Frappe 自身图标预加载警告 2 条，以及故意测试无权访问所致预期 403/PermissionError 2 条，不记为零警告。隔离测试批次的计划、课包、付款、权益、学生、课程、测试账号和角色子记录均清理；清理后再次 migrate 无孤立角色告警。
+- 隔离站完整回归 `Ran 132 tests in 36.512s / OK`（M1 30、M2 22、M3 80）。Python compile、JavaScript `node --check`、JSON parse 和 `git diff --check` 通过。正式 `frontend` 未迁移、重建、测试或写入；阶段 5A 不 push。
+
+### 阶段 5B：普通购买、续费与收款界面（已完成）
+
+- Student Package 原生新建表单只提供受控“创建购买草稿”，冻结快照仍由既有 `create_student_package` 服务生成；草稿继续走原生“提交”。列表和课包概览报表增加购买/续费入口，已购课包详情可直接新建续费包。
+- 详情页显示服务端派生的应收、净已付、尚需付款、状态、剩余课时及关联 Payment/Credit；未满款已提交购买包提供“录入收款”原生 Dialog。每次真实操作在表单/Dialog 生命周期中固定 request ID，调用既有受控 API；现金效果与权益流水只由服务端创建。
+- `record_payment` 增加可选收款备注，纳入同键同内容幂等校验；不改变现金、授予或余额语义。不实现退款、撤销、赠送或人工调整按钮。
+- 新增 4 项 M3 定向测试；隔离站完整回归 `Ran 136 tests in 37.584s / OK`（M1 30、M2 22、M3 84），覆盖购买/续费、一次和分次付款、超额回滚、幂等、角色及 User Permission。
+- 仅隔离站以真实 Edge/Playwright 点击报表入口、选学生/产品、创建/提交购买、Scheduler 两次付款（¥0.10 + ¥1.13）及 Manager 对续费包一次付清；两包各只有一次 +20 grant，状态和人民币金额按服务端刷新，浏览器控制台 0 error/warn。
+- 5B 专属虚构浏览器测试批次已清理，复核产品、课包、付款、权益、学生、课程、账号和角色子记录均为 0。正式 `frontend` 仍为 M2 final，未迁移、重建、测试或写入；5B 不 push。
+
+### 阶段 5C-1：付款撤销与退款关闭课包界面（已完成）
+
+- 仅在 Student Package 原生详情为 Manager 显示收款行“撤销收款”和“退款关闭课包”操作；Scheduler 没有纠错按钮。两个 Dialog 都明确显示资金、课时与不可逆业务后果，原因必填，调用既有 `reverse_payment` / `refund_close_package`，不在前端计算现金效果或权益收回。
+- 每次纠错 Dialog 的 request ID 在失败和重开重试期间保持稳定；成功后刷新服务器派生状态和 Payment/Credit 历史。撤销后显示原记录“已撤销”和新反向记录；退款关闭后显示“课包已关闭”，不再提示补款。退款 reversal、赠送和人工调整按钮仍留给 5C-2。
+- 新增 2 项概览回归，确认真实课消后撤销收款只冻结、不恢复权益；退款现金金额即使少于原收款也整包收回剩余权益。定向 24/24 与隔离站完整回归 138/138（M1 30、M2 22、M3 86）通过；旧权限、超额、零余额、并发和故障回滚用例继续通过。
+- Edge/Playwright 在隔离站实际点击 Manager 撤销、超额退款拒绝后重试、整包退款收回及零余额关闭；双击零余额退款只发出一个 API 请求。Scheduler 视图无纠错入口。故意超额提交产生预期 417 控制台事件，正常成功路径无 error/warn。
+- 隔离浏览器测试批次的产品、课包、付款、权益、学生、课程、测试账号及角色子记录已清理并复核全为 0。正式 `frontend` 未迁移、重建、测试或写入；5C-1 暂不 push。
+
+### 阶段 5C-2：退款撤销、赠送课包与人工权益调整界面（已完成）
+
+- Manager 在 Student Package 原生详情可对未撤销的退款执行“撤销退款关闭”：对话框展示原退款金额和原收回课时、要求原因，调用既有 `reverse_payment`；界面刷新后显示反向 Payment、按原快照恢复的 Credit 与更新后的派生状态。退款前已扣课时仍保持原流水。
+- Manager 在课包列表或详情可进入“赠送课包”：原生新建表单调用既有 `create_student_package` 创建草稿，随后走原生提交；赠送成交金额为零、不创建收款、只授予一次完整权益。Scheduler 不显示赠送入口，服务端继续实施原有角色及 User Permission 检查。
+- Manager 在已提交且未退款关闭的课包详情可打开“人工调整课时”对话框，显示服务端派生余额、选择增减、输入正整数课时和必填原因；调用既有 `adjust_credits` 追加不可变权益流水，拒绝负余额。三类操作均保持稳定 request ID、按钮 pending 防双击，并刷新服务端状态和审计历史；前端不直接写 Payment/Credit。
+- 新增 3 项定向 M3 测试，结合原有角色、Guest、User Permission、DocShare、幂等、故障回滚和并发用例，隔离站完整回归 `Ran 141 tests in 37.634s / OK`（M1 30、M2 22、M3 89）。
+- 隔离站 Edge/Playwright 实际点击退款撤销、赠送创建/提交及正负调整；双击撤销仅发一条 API 请求，超额负调整被拒后重试成功，正常路径控制台 0 error/warn。测试批次清理后产品、课包、付款、权益、学生、课程、账号和角色子记录均为 0。正式 `frontend` 未迁移、重建、测试或写入；5C-2 暂不 push。
+
+### 阶段 5D：完整 UI 端到端验收（已完成）
+
+- 仅在 `127.0.0.1:18081` 隔离站以现有 Edge/Playwright 实际走通建档→20 课时购买→`¥0.10 + ¥1.13` 分次付款→唯一 `+20`→排课/到课→M2 `+1` 与 M3 `-1`→余额 19；随后 Manager 撤销执行返还、人工调整、退款关闭收回原余额快照及退款 reversal。
+- 赠送包草稿无权益和付款，提交后唯一授予 `+20`、成交 `¥0.00`、无虚假收款；浏览器还验证 FEFO/FIFO、补款恢复不重复授予、Scheduler/Manager 界面边界、User Permission、Guest 与直接 API 403。余额不足和关闭后再扣课本轮由完整自动化覆盖，不冒充浏览器验收；完整矩阵见 `docs/M3_ACCEPTANCE.md`。
+- 首次带浏览器持久夹具跑完整回归，8 项旧用例因全表计数包含该夹具而失败；精确清理、恢复五项课消规则后重跑 `Ran 141 tests in 36.752s / OK`（M1 30、M2 22、M3 89）。测试夹具及临时账户已清空，五项规则与原始“未配置”一致；不改旧测试断言或业务逻辑。
+- 浏览器预期超额拒绝、预期 403 与 Frappe 图标预加载警告分别记录；无未预期业务脚本异常。正式 `frontend` 仍是 M2 final，未迁移、重建、测试或写入；5D 暂不 push。
 
 ## M2 当前状态
 
@@ -228,9 +349,10 @@ git log --oneline -5
 
 ## 下一步操作
 
-1. 创建 M2 最终冻结 commit，并确认工作区干净。
-2. 停止后续 Git 操作，等待用户确认是否把 `m2-attendance-consumption` 推进到 `main` 和 `origin`。
+1. 阶段 5D checkpoint 后停止，等待用户确认下一阶段；暂不 push、合并 main 或正式部署。
+2. 后续任何正式迁移前，先只读审查现有金额列是否符合人民币分精度，避免旧数据在缩小字段 scale 时被数据库静默舍入；未经用户确认不触碰正式 `frontend`。
+3. 所有 migrate、自动化和写入继续只允许在隔离站执行；正式 `frontend` 保持未触碰，直至候选 checkpoint、完整备份和用户明确批准。
 
 ## 明确停止范围
 
-M2 只实现确认排课后的执行、考勤和不可变课消决策流水；不进入收费、课包余额、续费、教师工资、财务、微信、支付、AI 自动排课、大型经营报表或家长端。M2 正式部署与冻结验收已完成；未经用户确认不得合并 main、push、rebase、reset、force push 或删除 M2 分支。
+M2 只实现确认排课后的执行、考勤和不可变课消决策流水，已正式部署并冻结。M3 只进入课包、收款、不可变课时权益、M2 同事务扣减、剩余课时和续费；不进入教师工资、总账、会计凭证、支付渠道集成、家长端、发票、CRM、营销、AI 收费或大型经营报表。正式部署前必须重新完整备份并取得用户确认；不得在 `frontend` 运行测试或创建测试业务数据。

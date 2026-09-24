@@ -1,0 +1,211 @@
+{
+ "doctype": "DocType",
+ "name": "MX Student Package",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "student",
+  "package_plan",
+  "acquisition_type",
+  "plan_name_snapshot",
+  "course",
+  "course_name_snapshot",
+  "credits_granted",
+  "deal_amount",
+  "currency",
+  "effective_from",
+  "expires_on",
+  "activated_at",
+  "package_overview",
+  "source_reference",
+  "request_id",
+  "amended_from",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "学生",
+   "options": "MX Student",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "package_plan",
+   "fieldtype": "Link",
+   "label": "课包计划",
+   "options": "MX Package Plan",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "acquisition_type",
+   "fieldtype": "Select",
+   "label": "获取类型",
+   "options": "购买\n赠送",
+   "default": "购买",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "plan_name_snapshot",
+   "fieldtype": "Data",
+   "label": "课包名称快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "适用课程快照",
+   "options": "MX Course",
+   "reqd": 1,
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "course_name_snapshot",
+   "fieldtype": "Data",
+   "label": "课程名称快照",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "credits_granted",
+   "fieldtype": "Int",
+   "label": "获得课时数快照",
+   "reqd": 1,
+   "read_only": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "deal_amount",
+   "fieldtype": "Currency",
+   "precision": "2",
+   "label": "成交金额快照",
+   "options": "currency",
+   "reqd": 1,
+   "read_only": 1,
+   "non_negative": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "币种快照",
+   "options": "Currency",
+   "default": "CNY",
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "生效日期",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "expires_on",
+   "fieldtype": "Date",
+   "label": "失效日期",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "activated_at",
+   "fieldtype": "Datetime",
+   "label": "首次激活时间",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "package_overview",
+   "fieldtype": "HTML",
+   "label": "课包状态与权益（只读）"
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Small Text",
+   "label": "报名/购买来源"
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "系统请求标识",
+   "reqd": 1,
+   "read_only": 1,
+   "hidden": 1,
+   "unique": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "修订来源",
+   "options": "MX Student Package",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "仅隔离测试填写；真实记录留空。"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "select": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "submit": 1,
+   "cancel": 0,
+   "amend": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "autoname": "MX-SPK-.#####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "plan_name_snapshot",
+ "search_fields": "student,plan_name_snapshot,course_name_snapshot",
+ "show_title_field_in_link": 1,
+ "is_submittable": 1
+}

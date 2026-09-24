@@ -1,0 +1,46 @@
+name: Meixin CI V1
+
+on:
+  push:
+    branches: [m3-enrollment-payment-package, ci/meixin-ci-v1]
+  pull_request:
+    branches: [m3-enrollment-payment-package]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meixin-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Changed-line whitespace
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "$EVENT_NAME" = pull_request ]; then
+            base="$PR_BASE_SHA"
+          elif [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            base="$(git merge-base HEAD origin/m3-enrollment-payment-package)"
+          else
+            base="$BEFORE_SHA"
+          fi
+          git diff --check "$base" HEAD
+      - name: Python, JSON, and high-confidence secret checks
+        run: python ci/check_static.py
+      - name: JavaScript syntax
+        run: git ls-files -z '*.js' '*.cjs' | xargs -0 -r -n1 node --check
+      - name: Frappe-free unit tests
+        run: python -m unittest discover -s ci -p 'test_*.py' -v

@@ -33,6 +33,20 @@ class TestM2(unittest.TestCase):
         self.teacher = self.master("MX Teacher", teacher_name="M2虚构教师")
         self.course = self.master("MX Course", course_name="M2虚构课程", default_duration_minutes=60)
         self.room = self.master("MX Room", room_name="M2虚构教室", capacity=8)
+        self.plan = frappe.get_doc({
+            "doctype": "MX Package Plan", "plan_name": "M2回归课包",
+            "course": self.course.name, "standard_credits": 100,
+            "standard_price": 10000, "currency": "CNY", "enabled": 1,
+            "demo_batch": self.batch,
+        }).insert()
+        self.packages = []
+        for student in self.students:
+            self.packages.append(frappe.get_doc({
+                "doctype": "MX Student Package", "student": student.name,
+                "package_plan": self.plan.name, "acquisition_type": "赠送",
+                "request_id": uuid.uuid4().hex,
+                "effective_from": now_datetime().date(), "demo_batch": self.batch,
+            }).insert().submit())
 
     def tearDown(self):
         assert_isolated_site()
@@ -48,8 +62,11 @@ class TestM2(unittest.TestCase):
             for doctype, parents in (("MX Session Attendance", executions), ("MX Session Student", sessions)):
                 if parents:
                     frappe.db.delete(doctype, {"parent": ["in", parents]})
-            for doctype in ("MX Lesson Consumption Entry", "MX Session Execution", "MX Session",
-                            "MX Student", "MX Teacher", "MX Course", "MX Room"):
+            for doctype in (
+                "MX Lesson Credit Entry", "MX Payment", "MX Student Package", "MX Package Plan",
+                "MX Lesson Consumption Entry", "MX Session Execution", "MX Session",
+                "MX Student", "MX Teacher", "MX Course", "MX Room",
+            ):
                 names = frappe.get_all(doctype, filters={"demo_batch": self.batch}, pluck="name")
                 if names:
                     frappe.db.delete("Version", {"ref_doctype": doctype, "docname": ["in", names]})
@@ -333,6 +350,7 @@ class TestM2(unittest.TestCase):
         return results
 
     def test_15_concurrent_double_completion_creates_one_active_execution(self):
+        self.set_rules(present_rule="课消")
         session = self.session()
         first, second = self.execution(session), self.execution(session)
         frappe.db.commit()
@@ -343,7 +361,14 @@ class TestM2(unittest.TestCase):
         )
         self.assertEqual([row["ok"] for row in results], [True, False], results)
         self.assertEqual(frappe.db.count("MX Session Execution", {"session": session.name, "docstatus": 1}), 1)
-        self.assertEqual(frappe.db.count("MX Lesson Consumption Entry", {"session": session.name, "operation_type": "决定"}), 1)
+        decisions = frappe.get_all(
+            "MX Lesson Consumption Entry",
+            filters={"session": session.name, "operation_type": "决定"}, pluck="name",
+        )
+        self.assertEqual(len(decisions), 1)
+        self.assertEqual(
+            frappe.db.count("MX Lesson Credit Entry", {"m2_consumption_entry": decisions[0]}), 1
+        )
 
     def test_16_concurrent_completion_and_session_cancel_leave_one_legal_result(self):
         session = self.session()
