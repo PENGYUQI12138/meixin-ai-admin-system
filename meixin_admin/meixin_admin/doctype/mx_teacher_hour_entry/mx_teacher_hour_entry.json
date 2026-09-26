@@ -1,0 +1,33 @@
+{
+ "doctype": "DocType", "name": "MX Teacher Hour Entry", "module": "Meixin Admin",
+ "engine": "InnoDB", "custom": 0,
+ "field_order": ["execution", "session", "teacher", "teacher_name_snapshot", "course", "course_name_snapshot", "scheduled_start", "scheduled_end", "actual_start", "actual_end", "operation_type", "effect_minutes", "reversal_of", "exception_reason", "confirmed_by", "confirmed_at", "idempotency_key", "demo_batch"],
+ "fields": [
+  {"fieldname":"execution","fieldtype":"Link","label":"原始执行单","options":"MX Session Execution","reqd":1,"read_only":1,"in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"session","fieldtype":"Link","label":"原排课","options":"MX Session","reqd":1,"read_only":1,"in_standard_filter":1},
+  {"fieldname":"teacher","fieldtype":"Link","label":"教师","options":"MX Teacher","reqd":1,"read_only":1,"in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"teacher_name_snapshot","fieldtype":"Data","label":"教师姓名快照","reqd":1,"read_only":1},
+  {"fieldname":"course","fieldtype":"Link","label":"课程","options":"MX Course","reqd":1,"read_only":1},
+  {"fieldname":"course_name_snapshot","fieldtype":"Data","label":"课程名称快照","reqd":1,"read_only":1},
+  {"fieldname":"scheduled_start","fieldtype":"Datetime","label":"计划开始","reqd":1,"read_only":1},
+  {"fieldname":"scheduled_end","fieldtype":"Datetime","label":"计划结束","reqd":1,"read_only":1},
+  {"fieldname":"actual_start","fieldtype":"Datetime","label":"实际开始","read_only":1},
+  {"fieldname":"actual_end","fieldtype":"Datetime","label":"实际结束","read_only":1},
+  {"fieldname":"operation_type","fieldtype":"Select","label":"操作类型","options":"确认\n撤销","reqd":1,"read_only":1,"in_list_view":1},
+  {"fieldname":"effect_minutes","fieldtype":"Int","label":"授课分钟增减","reqd":1,"read_only":1,"in_list_view":1,"description":"一节课按实际授课时间记录一次，与学生人数和课消规则无关；课时数=分钟/60。"},
+  {"fieldname":"reversal_of","fieldtype":"Link","label":"撤销原记录","options":"MX Teacher Hour Entry","read_only":1},
+  {"fieldname":"exception_reason","fieldtype":"Small Text","label":"异常确认或撤销原因","read_only":1},
+  {"fieldname":"confirmed_by","fieldtype":"Link","label":"确认人","options":"User","reqd":1,"read_only":1},
+  {"fieldname":"confirmed_at","fieldtype":"Datetime","label":"确认时间","reqd":1,"read_only":1},
+  {"fieldname":"idempotency_key","fieldtype":"Data","label":"幂等键","reqd":1,"read_only":1,"unique":1,"no_copy":1},
+  {"fieldname":"demo_batch","fieldtype":"Data","label":"测试批次","read_only":1,"no_copy":1}
+ ],
+ "permissions": [
+  {"role":"Meixin Manager","read":1,"select":1,"report":1},
+  {"role":"Meixin Scheduler","read":1,"select":1,"report":1}
+ ],
+ "actions":[], "links":[], "states":[], "track_changes":0, "allow_rename":0,
+ "sort_field":"creation", "sort_order":"DESC", "autoname":"MX-THE-.#####",
+ "naming_rule":"Expression (old style)", "title_field":"teacher_name_snapshot",
+ "search_fields":"teacher_name_snapshot,session,execution", "show_title_field_in_link":1
+}

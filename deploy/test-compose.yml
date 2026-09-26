@@ -22,6 +22,8 @@ services:
     image: redis:6.2-alpine
   app:
     image: frappe/erpnext:v16.35.0
+    environment:
+      MEIXIN_TEST_SITE: ${MEIXIN_TEST_SITE:-test_meixin_m1.localhost}
     command: [/home/frappe/frappe-bench/env/bin/python, /opt/meixin-test/bootstrap.py, serve]
     working_dir: /home/frappe/frappe-bench
     volumes:
@@ -42,7 +44,7 @@ services:
     environment:
       BACKEND: app:18081
       SOCKETIO: app:18082
-      FRAPPE_SITE_NAME_HEADER: test_meixin_m1.localhost
+      FRAPPE_SITE_NAME_HEADER: ${MEIXIN_TEST_SITE:-test_meixin_m1.localhost}
       UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
       UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
       UPSTREAM_REAL_IP_RECURSIVE: "off"
@@ -51,7 +53,7 @@ services:
       SOCKETIO_UPSTREAM_ORIGIN: http://app:18081
       SOCKETIO_UPSTREAM_HOST: app:18081
     ports:
-      - 127.0.0.1:18081:8080
+      - 127.0.0.1:${MEIXIN_TEST_PORT:-18081}:8080
     volumes:
       - ./nginx-entrypoint.sh:/opt/meixin-test/nginx.sh:ro
     depends_on:

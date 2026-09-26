@@ -2,7 +2,7 @@ name: Meixin CI V1
 
 on:
   push:
-    branches: [m3-enrollment-payment-package, ci/meixin-ci-v1]
+    branches: [m3-enrollment-payment-package, ci/meixin-ci-v1, m4-teacher-payroll]
   pull_request:
     branches: [m3-enrollment-payment-package]
 
@@ -33,7 +33,7 @@ jobs:
           if [ "$EVENT_NAME" = pull_request ]; then
             base="$PR_BASE_SHA"
           elif [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
-            base="$(git merge-base HEAD origin/m3-enrollment-payment-package)"
+            base="$(git merge-base HEAD origin/main)"
           else
             base="$BEFORE_SHA"
           fi
