@@ -96,6 +96,9 @@ def configure_browser():
     frappe.connect()
     try:
         frappe.set_user("Administrator")
+        for app_name in ("frappe", "erpnext"):
+            frappe.db.set_value("Installed Application", {"app_name": app_name},
+                                "is_setup_complete", 1, update_modified=False)
         frappe.db.set_single_value("System Settings", {
             "time_zone": "Asia/Chongqing", "language": "zh", "setup_complete": 1,
         })

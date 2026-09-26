@@ -38,20 +38,14 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
         source = frappe.get_doc("MX Session Execution", execution)
         if not frappe.has_permission("MX Session Execution", "read", doc=source):
             frappe.throw("没有权限读取执行单。", frappe.PermissionError)
-        prior = frappe.db.sql(
-            f"SELECT name FROM `tab{DOCTYPE}` WHERE execution=%s AND operation_type='确认' FOR UPDATE",
-            (execution,), as_dict=True,
-        )
-        if prior:
-            frappe.throw(f"执行单已有教师课时记录 {prior[0].name}，不能重复确认。")
         session = frappe.get_doc("MX Session", source.session)
         for doc in (session, frappe.get_doc("MX Teacher", session.teacher),
                     frappe.get_doc("MX Course", session.course)):
             if not frappe.has_permission(doc.doctype, "read", doc=doc):
                 frappe.throw("没有权限使用关联排课或档案。", frappe.PermissionError)
-        taught = cint(taught)
-        if taught not in (0, 1):
+        if str(taught) not in {"0", "1"}:
             frappe.throw("是否实际授课必须为 0 或 1。")
+        taught = cint(taught)
         present = any(row.attendance_status == "到课" for row in source.attendance)
         reason = (exception_reason or "").strip()
         if taught:
@@ -62,7 +56,9 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
             if minutes < 1 or minutes > 1440:
                 frappe.throw("实际授课时长必须在 1 至 1440 分钟之间。")
             planned_start, planned_end = get_datetime(session.start_at), get_datetime(session.end_at)
-            unusual = (not present or start < planned_start or end > planned_end)
+            planned_minutes = int((planned_end - planned_start).total_seconds() // 60)
+            unusual = (not present or start < planned_start or end > planned_end
+                       or abs(minutes - planned_minutes) > 15)
         else:
             if actual_start or actual_end:
                 frappe.throw("未实际授课不能填写授课起止时间。")
@@ -73,6 +69,20 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
             unusual = True
         if unusual and (not is_manager() or not reason):
             frappe.throw("异常授课记录须由美心管理员填写原因并确认。", frappe.PermissionError)
+        reason = reason if unusual else None
+        prior = frappe.db.sql(
+            f"SELECT name FROM `tab{DOCTYPE}` WHERE execution=%s AND operation_type='确认' FOR UPDATE",
+            (execution,), as_dict=True,
+        )
+        if prior:
+            existing = frappe.get_doc(DOCTYPE, prior[0].name)
+            if not frappe.has_permission(DOCTYPE, "read", doc=existing):
+                frappe.throw("没有权限读取教师课时记录。", frappe.PermissionError)
+            if (get_datetime(existing.actual_start) if existing.actual_start else None) == start and (
+                    get_datetime(existing.actual_end) if existing.actual_end else None) == end and (
+                    existing.exception_reason or None) == reason and cint(existing.effect_minutes) == minutes:
+                return existing.name
+            frappe.throw(f"执行单已有不同内容的教师课时记录 {existing.name}，不能重复确认。")
         return _insert({
             "execution": source.name, "session": session.name,
             "teacher": session.teacher,
@@ -82,7 +92,7 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
             "scheduled_start": session.start_at, "scheduled_end": session.end_at,
             "actual_start": start, "actual_end": end,
             "operation_type": "确认", "effect_minutes": minutes,
-            "exception_reason": reason if unusual else None,
+            "exception_reason": reason,
             "confirmed_by": frappe.session.user, "confirmed_at": now_datetime(),
             "idempotency_key": f"teacher-confirm:{source.name}",
             "demo_batch": session.demo_batch,

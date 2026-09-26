@@ -24,6 +24,7 @@ def main():
             "settings": "MX Settings", "payment_submit": "MX Payment",
             "credit_adjust": "MX Student Package",
             "package_create": "MX Student",
+            "teacher_confirm": "MX Session Execution",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
@@ -55,6 +56,11 @@ def main():
                     "并发课包创建", config["value"],
                 )
                 frappe.db.set_value("MX Student Package", doc.name, "demo_batch", test_batch)
+            elif config["operation"] == "teacher_confirm":
+                from meixin_admin.teacher_hours import confirm_teaching
+
+                doc.name = confirm_teaching(doc.name, config["field"]["start"],
+                                            config["field"]["end"])
             elif config["operation"] == "session_cancel":
                 doc.cancel()
             elif config["operation"] == "settings":

@@ -39,7 +39,10 @@ switch ($Action) {
         Invoke-TestCompose up -d
         Invoke-TestCompose exec -T app env/bin/python /opt/meixin-test/bootstrap.py bootstrap
     }
-    'install' { Invoke-TestCompose exec -T app env/bin/python /opt/meixin-test/bootstrap.py install }
+    'install' {
+        Invoke-TestCompose exec -T app env/bin/python /opt/meixin-test/bootstrap.py install
+        Invoke-TestCompose restart app
+    }
     'test' { Invoke-TestCompose exec -T app env/bin/python /opt/meixin-test/bootstrap.py test }
     'configure-browser' { Invoke-TestCompose exec -T app env/bin/python /opt/meixin-test/bootstrap.py configure-browser }
     'status' { Invoke-TestCompose ps }
