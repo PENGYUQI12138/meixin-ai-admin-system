@@ -4,7 +4,7 @@ on:
   push:
     branches: [m3-enrollment-payment-package, ci/meixin-ci-v1, m4-teacher-payroll]
   pull_request:
-    branches: [m3-enrollment-payment-package]
+    branches: [main, m3-enrollment-payment-package]
 
 permissions:
   contents: read

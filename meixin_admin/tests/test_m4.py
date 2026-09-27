@@ -9,7 +9,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 import frappe
-from frappe.utils import now_datetime
+from frappe.utils import get_datetime, now_datetime
 
 from meixin_admin import entitlements
 from meixin_admin.teacher_hours import confirm_teaching
@@ -57,8 +57,8 @@ class TestM4(unittest.TestCase):
     def master(self, doctype, **fields):
         return frappe.get_doc({"doctype": doctype, "enabled": 1, "demo_batch": self.batch, **fields}).insert()
 
-    def execution(self, statuses):
-        start = now_datetime() - timedelta(hours=3)
+    def execution(self, statuses, *, start=None, early_reason=None):
+        start = start or now_datetime() - timedelta(hours=3)
         session = frappe.get_doc({
             "doctype": "MX Session", "course": self.course.name, "teacher": self.teacher.name,
             "room": self.room.name, "start_at": start, "end_at": start + timedelta(hours=1),
@@ -67,12 +67,28 @@ class TestM4(unittest.TestCase):
         }).insert().submit()
         execution = frappe.get_doc({
             "doctype": "MX Session Execution", "session": session.name,
+            "early_completion_reason": early_reason,
             "attendance": [
                 {"student": student.name, "attendance_status": status}
                 for student, status in zip(self.students[:len(statuses)], statuses, strict=True)
             ],
         }).insert().submit()
         return session, execution
+
+    def worker(self, operation, name, hold, field=None):
+        process = subprocess.Popen(
+            [sys.executable, "-m", "meixin_admin.tests.concurrent_worker"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1,
+        )
+        self.workers.append(process)
+        process.stdin.write(json.dumps({
+            "site": frappe.local.site, "sites_path": os.path.abspath(frappe.local.sites_path),
+            "operation": operation, "name": name, "hold": hold, "field": field,
+        }) + "\n")
+        process.stdin.flush()
+        self.assertEqual(process.stdout.readline().strip(), "LOCKED" if hold else "READY")
+        return process
 
     def test_normal_multi_student_and_leave_count_once(self):
         session, execution = self.execution(["到课", "到课", "请假"])
@@ -92,6 +108,13 @@ class TestM4(unittest.TestCase):
 
     def test_cancel_revision_and_zero_minutes(self):
         session, execution = self.execution(["请假"])
+        completed = execution.completed_at
+        frappe.db.set_value("MX Session Execution", execution.name, "completed_at", None,
+                            update_modified=False)
+        with self.assertRaises(frappe.ValidationError):
+            confirm_teaching(execution.name, taught=0, exception_reason="缺少完成时间")
+        frappe.db.set_value("MX Session Execution", execution.name, "completed_at", completed,
+                            update_modified=False)
         with self.assertRaises(frappe.PermissionError):
             confirm_teaching(execution.name, taught=0)
         first = frappe.get_doc("MX Teacher Hour Entry", confirm_teaching(
@@ -155,6 +178,61 @@ class TestM4(unittest.TestCase):
         self.assertEqual(confirm_teaching(execution.name, start, end,
                                           exception_reason="提前结束并核实"), name)
 
+    def test_completed_at_cutoff_after_early_execution(self):
+        start = now_datetime() - timedelta(minutes=30)
+        session, execution = self.execution(["到课"], start=start, early_reason="提前完成测试")
+        completed = get_datetime(execution.completed_at)
+        actual_start = start + timedelta(minutes=5)
+        with patch("meixin_admin.teacher_hours.now_datetime", return_value=completed + timedelta(minutes=2)):
+            with self.assertRaises(frappe.ValidationError):
+                confirm_teaching(execution.name, actual_start, completed + timedelta(seconds=1),
+                                 exception_reason="完成后仍授课")
+        self.assertEqual(frappe.db.count("MX Teacher Hour Entry", {"execution": execution.name}), 0)
+        frappe.db.set_value("MX Session Execution", execution.name, "completed_at", None,
+                            update_modified=False)
+        with self.assertRaises(frappe.ValidationError):
+            confirm_teaching(execution.name, actual_start, completed,
+                             exception_reason="缺少完成时间")
+        frappe.db.set_value("MX Session Execution", execution.name, "completed_at", completed,
+                            update_modified=False)
+        name = confirm_teaching(execution.name, actual_start, completed,
+                                exception_reason="提前完成，核实截至完成时刻的授课")
+        self.assertEqual(get_datetime(frappe.db.get_value("MX Teacher Hour Entry", name, "actual_end")),
+                         completed)
+
+    def test_fifteen_sixteen_minute_review_boundary(self):
+        scheduler = frappe.get_doc({
+            "doctype": "User", "email": f"m4-{uuid.uuid4().hex[:12]}@example.invalid",
+            "first_name": "M4虚构排课员", "enabled": 1, "send_welcome_email": 0,
+            "user_type": "System User", "roles": [{"role": "Meixin Scheduler"}],
+        }).insert().name
+        session, execution = self.execution(["到课"], start=now_datetime() - timedelta(hours=4))
+        frappe.set_user(scheduler)
+        name = confirm_teaching(execution.name, session.start_at,
+                                session.end_at - timedelta(minutes=15))
+        self.assertEqual(frappe.db.get_value("MX Teacher Hour Entry", name, "effect_minutes"), 45)
+        frappe.set_user("Administrator")
+        session, execution = self.execution(["到课"], start=now_datetime() - timedelta(hours=6))
+        end = session.end_at - timedelta(minutes=16)
+        frappe.set_user(scheduler)
+        with self.assertRaises(frappe.PermissionError):
+            confirm_teaching(execution.name, session.start_at, end)
+        frappe.set_user("Administrator")
+        with self.assertRaises(frappe.PermissionError):
+            confirm_teaching(execution.name, session.start_at, end)
+        name = confirm_teaching(execution.name, session.start_at, end,
+                                exception_reason="少于计划十六分钟，已核实")
+        self.assertEqual(frappe.db.get_value("MX Teacher Hour Entry", name, "effect_minutes"), 44)
+
+    def test_cross_midnight_actual_period(self):
+        start = now_datetime().replace(hour=0, minute=0, second=0, microsecond=0)
+        start -= timedelta(days=1, minutes=30)
+        session, execution = self.execution(["到课"], start=start)
+        actual_start, actual_end = start + timedelta(minutes=5), start + timedelta(minutes=50)
+        self.assertNotEqual(actual_start.date(), actual_end.date())
+        name = confirm_teaching(execution.name, actual_start, actual_end)
+        self.assertEqual(frappe.db.get_value("MX Teacher Hour Entry", name, "effect_minutes"), 45)
+
     def test_substitute_and_coteaching_are_not_silently_recorded(self):
         session, execution = self.execution(["到课"])
         substitute = self.master("MX Teacher", teacher_name="M4虚构代课教师")
@@ -172,24 +250,9 @@ class TestM4(unittest.TestCase):
         frappe.db.commit()
         self.committed = True
 
-        def worker(hold):
-            process = subprocess.Popen(
-                [sys.executable, "-m", "meixin_admin.tests.concurrent_worker"],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True, bufsize=1,
-            )
-            self.workers.append(process)
-            process.stdin.write(json.dumps({
-                "site": frappe.local.site, "sites_path": os.path.abspath(frappe.local.sites_path),
-                "operation": "teacher_confirm", "name": execution.name, "hold": hold,
-                "field": {"start": str(session.start_at), "end": str(session.end_at)},
-            }) + "\n")
-            process.stdin.flush()
-            self.assertEqual(process.stdout.readline().strip(), "LOCKED" if hold else "READY")
-            return process
-
-        first = worker(True)
-        second = worker(False)
+        field = {"start": str(session.start_at), "end": str(session.end_at)}
+        first = self.worker("teacher_confirm", execution.name, True, field)
+        second = self.worker("teacher_confirm", execution.name, False, field)
         second.stdin.write("GO\n")
         second.stdin.flush()
         self.assertEqual(second.stdout.readline().strip(), "ATTEMPT")
@@ -209,6 +272,42 @@ class TestM4(unittest.TestCase):
         self.assertEqual(frappe.db.count("MX Teacher Hour Entry", {
             "execution": execution.name, "operation_type": "确认",
         }), 1)
+
+    def test_confirm_cancel_race_keeps_legal_ledger(self):
+        def race(first_operation, second_operation, session, execution):
+            field = {"start": str(session.start_at), "end": str(session.end_at)}
+            first = self.worker(first_operation, execution.name, True, field)
+            second = self.worker(second_operation, execution.name, False, field)
+            second.stdin.write("GO\n")
+            second.stdin.flush()
+            self.assertEqual(second.stdout.readline().strip(), "ATTEMPT")
+            first.stdin.write("GO\n")
+            first.stdin.flush()
+            self.assertEqual(first.stdout.readline().strip(), "ATTEMPT")
+            results = [json.loads(process.stdout.readline().removeprefix("RESULT "))
+                       for process in (first, second)]
+            self.assertTrue(results[0]["ok"], results)
+            frappe.db.rollback()
+            return results
+
+        session, execution = self.execution(["到课"])
+        frappe.db.commit()
+        self.committed = True
+        results = race("teacher_confirm", "execution_cancel", session, execution)
+        if not results[1]["ok"]:
+            self.assertIn("已回滚", results[1]["message"])
+            frappe.get_doc("MX Session Execution", execution.name).cancel()
+            frappe.db.commit()
+        self.assertEqual(frappe.db.get_value("MX Session Execution", execution.name, "docstatus"), 2)
+        self.assertEqual(sorted(frappe.get_all("MX Teacher Hour Entry", filters={"execution": execution.name},
+                                        pluck="effect_minutes")), [-60, 60])
+
+        session, execution = self.execution(["到课"], start=now_datetime() - timedelta(hours=6))
+        frappe.db.commit()
+        results = race("execution_cancel", "teacher_confirm", session, execution)
+        self.assertFalse(results[1]["ok"], results)
+        self.assertEqual(frappe.db.get_value("MX Session Execution", execution.name, "docstatus"), 2)
+        self.assertEqual(frappe.db.count("MX Teacher Hour Entry", {"execution": execution.name}), 0)
 
     def test_cancel_failure_rolls_back_teacher_m2_and_m3(self):
         plan = frappe.get_doc({

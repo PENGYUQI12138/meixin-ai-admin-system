@@ -25,6 +25,7 @@ def main():
             "credit_adjust": "MX Student Package",
             "package_create": "MX Student",
             "teacher_confirm": "MX Session Execution",
+            "execution_cancel": "MX Session Execution",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
@@ -62,6 +63,8 @@ def main():
                 doc.name = confirm_teaching(doc.name, config["field"]["start"],
                                             config["field"]["end"])
             elif config["operation"] == "session_cancel":
+                doc.cancel()
+            elif config["operation"] == "execution_cancel":
                 doc.cancel()
             elif config["operation"] == "settings":
                 if config["field"] not in {

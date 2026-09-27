@@ -30,11 +30,13 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
     require_member()
     with schedule_write():
         rows = frappe.db.sql(
-            "SELECT name, session, docstatus FROM `tabMX Session Execution` WHERE name=%s FOR UPDATE",
+            "SELECT name, session, docstatus, completed_at FROM `tabMX Session Execution` WHERE name=%s FOR UPDATE",
             (execution,), as_dict=True,
         )
         if not rows or rows[0].docstatus != 1:
             frappe.throw("只能确认已完成且未撤销执行单的教师授课课时。")
+        if not rows[0].completed_at:
+            frappe.throw("执行单缺少完成时间，须先核查原始记录。")
         source = frappe.get_doc("MX Session Execution", execution)
         if not frappe.has_permission("MX Session Execution", "read", doc=source):
             frappe.throw("没有权限读取执行单。", frappe.PermissionError)
@@ -50,6 +52,8 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
         reason = (exception_reason or "").strip()
         if taught:
             start, end = checked_period(actual_start, actual_end)
+            if end > get_datetime(rows[0].completed_at):
+                frappe.throw("实际授课结束时间不能晚于执行单完成时间；请撤销并修订提前完成的执行单。")
             if end > now_datetime():
                 frappe.throw("实际授课结束时间不能晚于当前时间。")
             minutes = int((end - start).total_seconds() // 60)
