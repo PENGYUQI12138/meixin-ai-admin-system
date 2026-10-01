@@ -1,0 +1,153 @@
+{
+  "accepted_commit": "9cfb747896939fba7bda2e1d98d4d401a9bde1b0",
+  "merge_commit": "01a105fa88f05f35af912e3cf7bd83e2df5eee08",
+  "data_source": "fictional isolated test sites only; not production history",
+  "browser_evidence": "DOM/screenshots in original local task tool history; not exported as video/files",
+  "raw_logs": "Gzip decompresses byte-for-byte to original outputs; originals remain local. No credentials/config/backup included.",
+  "files": [
+    {
+      "file": "M4-A-Git-local-2026-10-01.json.gz",
+      "original_file": "M4-A-Git-local-2026-10-01.json",
+      "raw_bytes": 376,
+      "raw_sha256": "6D4108E4FBA55FC654C565A3111B37B90C9F70AC053975D04BD9348A724246C0",
+      "gzip_sha256": "D7B3864C9DBB2721860C4395E5BA20862F9E8009055C633A396283C2FC33399F"
+    },
+    {
+      "file": "M4-A-GitHub-current-2026-10-01.json.gz",
+      "original_file": "M4-A-GitHub-current-2026-10-01.json",
+      "raw_bytes": 1109,
+      "raw_sha256": "C3A4B731C51E63E4AFADA85A5599E102FEA21DAF69FDD0E2F916BCD8094085A5",
+      "gzip_sha256": "FF171611C6060FDC29777996780FA3564554091C4D81EC993D60804142F53913"
+    },
+    {
+      "file": "M4-A-UAT-snapshot-comparison-2026-10-01.json.gz",
+      "original_file": "M4-A-UAT-snapshot-comparison-2026-10-01.json",
+      "raw_bytes": 303,
+      "raw_sha256": "4B7B91A99069BFD89BA3562885664E8C9D6028E7BE4900A40E0D8758C46AF9F6",
+      "gzip_sha256": "8A6472FE6A7139B69CA33734ABAFF2AEBA2D57E7B65CD949DEEC4050CEF577B3"
+    },
+    {
+      "file": "M4-A-existing-isolated-history-audit-2026-09-27.log.gz",
+      "original_file": "M4-A-existing-isolated-history-audit-2026-09-27.log",
+      "raw_bytes": 514,
+      "raw_sha256": "BBF280EF3D385D91103F8A4BA6C4092D5BD5EB940BFFB8A80EE5753022BB444B",
+      "gzip_sha256": "4FB42240E28174AEAF129F720B075E54911681FABF5912641758E25E16192AFC"
+    },
+    {
+      "file": "M4-A-history-audit-2026-10-01.log.gz",
+      "original_file": "M4-A-history-audit-2026-10-01.log",
+      "raw_bytes": 514,
+      "raw_sha256": "7B75FA2AFCA12851C33EF9C428AA1E0974935AF17DF1D6F5FA66C4F40A46AD2F",
+      "gzip_sha256": "55B736D04030AF67832C0160B1141A328C0107EA52C434662C88AC084F714916"
+    },
+    {
+      "file": "M4-A-missing-completed-at-HTTP-2026-09-30.log.gz",
+      "original_file": "M4-A-missing-completed-at-HTTP-2026-09-30.log",
+      "raw_bytes": 999,
+      "raw_sha256": "52FF99B670A13EF31E9625B15715886F3322DD0866F72E0420A42E4B75799A7D",
+      "gzip_sha256": "69338A352A561856A41C8EFDC67248C38B03ADE2D8359D035C527EDC2F31945C"
+    },
+    {
+      "file": "M4-A-outsider-HTTP-2026-09-30.log.gz",
+      "original_file": "M4-A-outsider-HTTP-2026-09-30.log",
+      "raw_bytes": 1005,
+      "raw_sha256": "0DFEF5EA731CAB0F7DC836CF0838E129AD0A58DA776DC8D71AEFAD090112A65F",
+      "gzip_sha256": "0D5F242CA74A821EABA1E20AD83F2188A647AB48BAD30A31E7E9F01640EA94E2"
+    },
+    {
+      "file": "M4-A-restore-comparison-2026-10-01.json.gz",
+      "original_file": "M4-A-restore-comparison-2026-10-01.json",
+      "raw_bytes": 373,
+      "raw_sha256": "D0CCC16AFDF0DDBC1BF1BCCAEF646893B3483721FEFFB84ACCA70CC365863E1E",
+      "gzip_sha256": "AEFB3F5F7BAA6EF3534A6A6F1FAE0D8E410F2EC3151B2D2EA70AE00D3B23DBCE"
+    },
+    {
+      "file": "M4-A-restored-schema-final-2026-10-01.log.gz",
+      "original_file": "M4-A-restored-schema-final-2026-10-01.log",
+      "raw_bytes": 74,
+      "raw_sha256": "CE77D361DD6BDB078297D37BD046E212546D757B439C440D805B75A2411106D2",
+      "gzip_sha256": "2A7D6E5D9DF80F951E689D243A5F2089B17390EBA9661BA47BDDFCD11F6083AC"
+    },
+    {
+      "file": "M4-A-restored-schema-recheck-2026-10-01.log.gz",
+      "original_file": "M4-A-restored-schema-recheck-2026-10-01.log",
+      "raw_bytes": 3121,
+      "raw_sha256": "FD43B4240494BC143BD41358BA2DA3C5FC230566B7CC6E2E768361F14F1A08D9",
+      "gzip_sha256": "EE5F04D549E9459CC14E2519101C9E24D6D275FAA072E03A6DED156B4B7E2394"
+    },
+    {
+      "file": "M4-A-role-UAT-state-2026-09-30-after-outsider.log.gz",
+      "original_file": "M4-A-role-UAT-state-2026-09-30-after-outsider.log",
+      "raw_bytes": 2369,
+      "raw_sha256": "23C5EC16697E21E10D9FEE4EC8F2A35AE6F0185420964F48469D0E648CC1BC99",
+      "gzip_sha256": "392D73D1809951C2F0E76D453DB08BB567A7BBFF432338E39AEA7B901462DAFE"
+    },
+    {
+      "file": "M4-A-role-UAT-state-2026-09-30-before.log.gz",
+      "original_file": "M4-A-role-UAT-state-2026-09-30-before.log",
+      "raw_bytes": 2369,
+      "raw_sha256": "23C5EC16697E21E10D9FEE4EC8F2A35AE6F0185420964F48469D0E648CC1BC99",
+      "gzip_sha256": "392D73D1809951C2F0E76D453DB08BB567A7BBFF432338E39AEA7B901462DAFE"
+    },
+    {
+      "file": "M4-A-role-UAT-state-2026-10-01.log.gz",
+      "original_file": "M4-A-role-UAT-state-2026-10-01.log",
+      "raw_bytes": 2369,
+      "raw_sha256": "23C5EC16697E21E10D9FEE4EC8F2A35AE6F0185420964F48469D0E648CC1BC99",
+      "gzip_sha256": "392D73D1809951C2F0E76D453DB08BB567A7BBFF432338E39AEA7B901462DAFE"
+    },
+    {
+      "file": "M4-A-upgrade-after-2026-09-27.log.gz",
+      "original_file": "M4-A-upgrade-after-2026-09-27.log",
+      "raw_bytes": 987,
+      "raw_sha256": "1A1DDEE55DEADC3E8EC426D32F47C1735E42560D542CD844EEAB4FFA16D8B394",
+      "gzip_sha256": "C65E633D17150A9944B9F8D42B66137A1797CE3683B669F36004FAD027F66DCB"
+    },
+    {
+      "file": "M4-A-upgrade-history-audit-2026-09-27.log.gz",
+      "original_file": "M4-A-upgrade-history-audit-2026-09-27.log",
+      "raw_bytes": 514,
+      "raw_sha256": "13031BE2F7806E32C41920719F19CA436893A63EAFFCE431D4987546220C7887",
+      "gzip_sha256": "BF43537C2B35D06A82B3983C17A22CA54FBAA0935F1C6302EC8E9053CF184360"
+    },
+    {
+      "file": "M4-A-upgrade-main-baseline-2026-09-27.log.gz",
+      "original_file": "M4-A-upgrade-main-baseline-2026-09-27.log",
+      "raw_bytes": 988,
+      "raw_sha256": "81114FA1BBA7ED13AE30F63D0BAC55C9DA892E3A87BB32588F11F34EA7E00C58",
+      "gzip_sha256": "B3FF52AB8E960A4BDA27E2DC0C8F0F5B62E842810BDD612D80B6E0A61CD22037"
+    },
+    {
+      "file": "M4-A-upgrade-migrate-2026-09-27.log.gz",
+      "original_file": "M4-A-upgrade-migrate-2026-09-27.log",
+      "raw_bytes": 33031,
+      "raw_sha256": "8667BF9CE0316169AADB6AF7B210947B0994DE59933BA558A037F9891AEB569D",
+      "gzip_sha256": "06D62DB867F07C6C15F58BD1DEFD34B8F277D468F952D93CCB33C6A884A10287"
+    },
+    {
+      "file": "M4-A-upgrade-restore-2026-10-01.log.gz",
+      "original_file": "M4-A-upgrade-restore-2026-10-01.log",
+      "raw_bytes": 33059,
+      "raw_sha256": "006408A65EAAD038647364F82DE61BA3D1DB6261EA30E6CC6A47ED7DCC1EC5AF",
+      "gzip_sha256": "95C8F49C8E5CFDA14C79971CF11A6402E154F3E029A698A6E588699F1D375ACF"
+    },
+    {
+      "file": "M4-A-upgrade-restored-baseline-2026-10-01.log.gz",
+      "original_file": "M4-A-upgrade-restored-baseline-2026-10-01.log",
+      "raw_bytes": 988,
+      "raw_sha256": "81114FA1BBA7ED13AE30F63D0BAC55C9DA892E3A87BB32588F11F34EA7E00C58",
+      "gzip_sha256": "B3FF52AB8E960A4BDA27E2DC0C8F0F5B62E842810BDD612D80B6E0A61CD22037"
+    },
+    {
+      "file": "M4-A_Frappe_复核后原始回归_2026-09-27.log.gz",
+      "original_file": "M4-A_Frappe_复核后原始回归_2026-09-27.log",
+      "raw_bytes": 23592,
+      "raw_sha256": "119A3594FD425DC930A7E450AB3E198EA3717854B8887031AE90656E3E784487",
+      "gzip_sha256": "9940E8366757E3C7EB978216F660C21CEE9E4FD9F8178295D959367195982C9D"
+    },
+    {
+      "file": "final-acceptance-report.md",
+      "sha256": "E82BF8002104C457ACF2A00D34436075159B0AF726436B5401F263A8B7FF171C"
+    }
+  ]
+}
