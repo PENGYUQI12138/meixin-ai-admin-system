@@ -1,0 +1,128 @@
+"""One immutable teaching decision per completed execution, plus reversals."""
+from contextlib import contextmanager
+
+import frappe
+from frappe.utils import cint, get_datetime, now_datetime
+
+from meixin_admin.permissions import is_manager, require_member
+from meixin_admin.scheduling import checked_period, schedule_write
+
+DOCTYPE = "MX Teacher Hour Entry"
+
+
+@contextmanager
+def entry_write():
+    previous = getattr(frappe.flags, "mx_teacher_hour_write", False)
+    frappe.flags.mx_teacher_hour_write = True
+    try:
+        yield
+    finally:
+        frappe.flags.mx_teacher_hour_write = previous
+
+
+def _insert(values):
+    with entry_write():
+        return frappe.get_doc({"doctype": DOCTYPE, **values}).insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, exception_reason=None):
+    require_member()
+    with schedule_write():
+        rows = frappe.db.sql(
+            "SELECT name, session, docstatus, completed_at FROM `tabMX Session Execution` WHERE name=%s FOR UPDATE",
+            (execution,), as_dict=True,
+        )
+        if not rows or rows[0].docstatus != 1:
+            frappe.throw("只能确认已完成且未撤销执行单的教师授课课时。")
+        if not rows[0].completed_at:
+            frappe.throw("执行单缺少完成时间，须先核查原始记录。")
+        source = frappe.get_doc("MX Session Execution", execution)
+        if not frappe.has_permission("MX Session Execution", "read", doc=source):
+            frappe.throw("没有权限读取执行单。", frappe.PermissionError)
+        session = frappe.get_doc("MX Session", source.session)
+        for doc in (session, frappe.get_doc("MX Teacher", session.teacher),
+                    frappe.get_doc("MX Course", session.course)):
+            if not frappe.has_permission(doc.doctype, "read", doc=doc):
+                frappe.throw("没有权限使用关联排课或档案。", frappe.PermissionError)
+        if str(taught) not in {"0", "1"}:
+            frappe.throw("是否实际授课必须为 0 或 1。")
+        taught = cint(taught)
+        present = any(row.attendance_status == "到课" for row in source.attendance)
+        reason = (exception_reason or "").strip()
+        if taught:
+            start, end = checked_period(actual_start, actual_end)
+            if end > get_datetime(rows[0].completed_at):
+                frappe.throw("实际授课结束时间不能晚于执行单完成时间；请撤销并修订提前完成的执行单。")
+            if end > now_datetime():
+                frappe.throw("实际授课结束时间不能晚于当前时间。")
+            minutes = int((end - start).total_seconds() // 60)
+            if minutes < 1 or minutes > 1440:
+                frappe.throw("实际授课时长必须在 1 至 1440 分钟之间。")
+            planned_start, planned_end = get_datetime(session.start_at), get_datetime(session.end_at)
+            planned_minutes = int((planned_end - planned_start).total_seconds() // 60)
+            unusual = (not present or start < planned_start or end > planned_end
+                       or abs(minutes - planned_minutes) > 15)
+        else:
+            if actual_start or actual_end:
+                frappe.throw("未实际授课不能填写授课起止时间。")
+            if present:
+                frappe.throw("学生已标记到课，不能确认未实际授课；请先修订执行单。")
+            start = end = None
+            minutes = 0
+            unusual = True
+        if unusual and (not is_manager() or not reason):
+            frappe.throw("异常授课记录须由美心管理员填写原因并确认。", frappe.PermissionError)
+        reason = reason if unusual else None
+        prior = frappe.db.sql(
+            f"SELECT name FROM `tab{DOCTYPE}` WHERE execution=%s AND operation_type='确认' FOR UPDATE",
+            (execution,), as_dict=True,
+        )
+        if prior:
+            existing = frappe.get_doc(DOCTYPE, prior[0].name)
+            if not frappe.has_permission(DOCTYPE, "read", doc=existing):
+                frappe.throw("没有权限读取教师课时记录。", frappe.PermissionError)
+            if (get_datetime(existing.actual_start) if existing.actual_start else None) == start and (
+                    get_datetime(existing.actual_end) if existing.actual_end else None) == end and (
+                    existing.exception_reason or None) == reason and cint(existing.effect_minutes) == minutes:
+                return existing.name
+            frappe.throw(f"执行单已有不同内容的教师课时记录 {existing.name}，不能重复确认。")
+        return _insert({
+            "execution": source.name, "session": session.name,
+            "teacher": session.teacher,
+            "teacher_name_snapshot": frappe.db.get_value("MX Teacher", session.teacher, "teacher_name"),
+            "course": session.course,
+            "course_name_snapshot": frappe.db.get_value("MX Course", session.course, "course_name"),
+            "scheduled_start": session.start_at, "scheduled_end": session.end_at,
+            "actual_start": start, "actual_end": end,
+            "operation_type": "确认", "effect_minutes": minutes,
+            "exception_reason": reason,
+            "confirmed_by": frappe.session.user, "confirmed_at": now_datetime(),
+            "idempotency_key": f"teacher-confirm:{source.name}",
+            "demo_batch": session.demo_batch,
+        }).name
+
+
+def reverse_execution_hours(execution):
+    rows = frappe.db.sql(
+        f"SELECT name FROM `tab{DOCTYPE}` WHERE execution=%s AND operation_type='确认' FOR UPDATE",
+        (execution.name,), as_dict=True,
+    )
+    if not rows:
+        return None
+    original = frappe.get_doc(DOCTYPE, rows[0].name)
+    prior = frappe.db.get_value(DOCTYPE, {"reversal_of": original.name}, "name")
+    if prior:
+        frappe.throw("教师课时确认已撤销，执行单状态不一致。")
+    values = {field: original.get(field) for field in (
+        "execution", "session", "teacher", "teacher_name_snapshot", "course",
+        "course_name_snapshot", "scheduled_start", "scheduled_end", "actual_start",
+        "actual_end", "demo_batch",
+    )}
+    values.update(
+        operation_type="撤销", effect_minutes=-cint(original.effect_minutes),
+        reversal_of=original.name, confirmed_by=frappe.session.user,
+        confirmed_at=now_datetime(), exception_reason=f"撤销执行单 {execution.name}",
+        idempotency_key=f"teacher-reversal:{original.name}",
+    )
+    return _insert(values)

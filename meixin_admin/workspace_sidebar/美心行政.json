@@ -53,6 +53,12 @@
   },
   {
    "type": "Link",
+   "label": "教师授课课时",
+   "link_type": "DocType",
+   "link_to": "MX Teacher Hour Entry"
+  },
+  {
+   "type": "Link",
    "label": "课程档案",
    "link_type": "DocType",
    "link_to": "MX Course"

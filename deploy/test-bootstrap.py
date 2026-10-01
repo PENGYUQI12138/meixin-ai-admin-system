@@ -9,7 +9,9 @@ import sysconfig
 import time
 
 BENCH = Path("/home/frappe/frappe-bench")
-SITE = "test_meixin_m1.localhost"
+SITE = os.environ.get("MEIXIN_TEST_SITE", "test_meixin_m1.localhost")
+if SITE not in {"test_meixin_m1.localhost", "test_meixin_m4.localhost"}:
+    raise RuntimeError("Refusing unknown test site")
 CONFIG = BENCH / "sites" / SITE / "site_config.json"
 
 
@@ -52,7 +54,7 @@ def bootstrap():
         admin_password = Path("/run/secrets/admin_password").read_text().strip()
         run(
             "bench", "new-site", SITE,
-            "--db-host", "db", "--db-name", "meixin_m1_test",
+            "--db-host", "db", "--db-name", SITE.split(".")[0],
             "--db-root-username", "root", "--db-root-password", root_password,
             "--mariadb-user-host-login-scope", "%",
             "--admin-password", admin_password, "--set-default",
@@ -94,6 +96,9 @@ def configure_browser():
     frappe.connect()
     try:
         frappe.set_user("Administrator")
+        for app_name in ("frappe", "erpnext"):
+            frappe.db.set_value("Installed Application", {"app_name": app_name},
+                                "is_setup_complete", 1, update_modified=False)
         frappe.db.set_single_value("System Settings", {
             "time_zone": "Asia/Chongqing", "language": "zh", "setup_complete": 1,
         })

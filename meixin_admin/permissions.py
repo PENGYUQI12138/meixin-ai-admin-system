@@ -2,7 +2,7 @@
 import frappe
 
 BUSINESS_ROLES = {"Meixin Manager", "Meixin Scheduler"}
-PROTECTED_LEDGERS = {"MX Lesson Consumption Entry", "MX Lesson Credit Entry"}
+PROTECTED_LEDGERS = {"MX Lesson Consumption Entry", "MX Lesson Credit Entry", "MX Teacher Hour Entry"}
 
 
 def is_manager(user=None):
@@ -52,5 +52,5 @@ def prevent_mx_share(doc, method=None):
                              "MX Session", "MX Session Student", "MX Session Execution",
                              "MX Session Attendance", "MX Lesson Consumption Entry", "MX Settings",
                              "MX Package Plan", "MX Student Package", "MX Payment",
-                             "MX Lesson Credit Entry"}:
+                             "MX Lesson Credit Entry", "MX Teacher Hour Entry"}:
         frappe.throw("美心数据不支持单独分享，请由系统管理员按需分配美心业务角色。", frappe.PermissionError)

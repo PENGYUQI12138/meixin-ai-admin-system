@@ -6,7 +6,7 @@ import sys
 
 def main():
     config = json.loads(sys.stdin.readline())
-    if config.get("site") != "test_meixin_m1.localhost":
+    if config.get("site") not in {"test_meixin_m1.localhost", "test_meixin_m4.localhost"}:
         raise RuntimeError("拒绝在非隔离站点启动并发测试。")
     import frappe
     from meixin_admin.scheduling import acquire_schedule_lock
@@ -24,10 +24,12 @@ def main():
             "settings": "MX Settings", "payment_submit": "MX Payment",
             "credit_adjust": "MX Student Package",
             "package_create": "MX Student",
+            "teacher_confirm": "MX Session Execution",
+            "execution_cancel": "MX Session Execution",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
-            not doc.demo_batch or not doc.demo_batch.startswith(("TEST-M1-", "TEST-M2-", "TEST-M3-"))
+            not doc.demo_batch or not doc.demo_batch.startswith(("TEST-M1-", "TEST-M2-", "TEST-M3-", "TEST-M4-"))
         ):
             raise RuntimeError("并发进程拒绝修改非本测试标记数据。")
         if config["hold"]:
@@ -55,7 +57,14 @@ def main():
                     "并发课包创建", config["value"],
                 )
                 frappe.db.set_value("MX Student Package", doc.name, "demo_batch", test_batch)
+            elif config["operation"] == "teacher_confirm":
+                from meixin_admin.teacher_hours import confirm_teaching
+
+                doc.name = confirm_teaching(doc.name, config["field"]["start"],
+                                            config["field"]["end"])
             elif config["operation"] == "session_cancel":
+                doc.cancel()
+            elif config["operation"] == "execution_cancel":
                 doc.cancel()
             elif config["operation"] == "settings":
                 if config["field"] not in {

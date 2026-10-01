@@ -27,6 +27,9 @@ class MXSessionExecution(SchedulingDocument):
                     for row in old.attendance]
         if changed or current_rows != old_rows:
             frappe.throw("撤销执行单时不能夹带修改；请重新加载原单后再取消。")
+        from meixin_admin.teacher_hours import reverse_execution_hours
+
+        reverse_execution_hours(self)
         reverse_execution(self)
 
     def on_trash(self):
