@@ -1,6 +1,13 @@
 # 美心行政 M1 / M2 / M3 / M4-A 开发进度
 
-最后更新：2026-10-01（Asia/Shanghai）
+最后更新：2026-10-23（Asia/Shanghai）
+
+## M4-B 隔离开发（当前状态）
+
+- M4-A 已于 2026-10-22 部署 frontend 并通过用户人工验收，正式镜像为 `meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0`。下文 10 月 1 日的未部署状态保留为历史。
+- 2026-10-23 已重新核对远端 main、封存标签与本地基线，均为 `6fae2b9c978b3c812a0d999d01bec2dade9c3f80`。独立 worktree `work/meixin_admin`，分支 `m4-b-teacher-payroll`，不切换原运行代码或原检出。
+- 用户已确认 M4-B 修正口径并授权隔离开发、迁移设计及测试，详见 `docs/M4_B_DESIGN.md`。固定费用支持全日及指定课程/工作事项覆盖，首版整单一次付款；不安装 HRMS、不升级依赖。
+- 开发与测试进行中，实际结果待记录；未合并、正式迁移或部署。原 152 项回归不得弱化，不在 frontend 运行测试。
 
 ## M4-A 最终验收与封存（当前状态）
 
