@@ -2,7 +2,7 @@ param(
     [ValidateSet('start', 'install', 'test', 'configure-browser', 'status', 'stop')]
     [string]$Action = 'status',
     [string]$ScratchDirectory = '',
-    [ValidateSet('M1', 'M4')]
+    [ValidateSet('M1', 'M4', 'M4B')]
     [string]$Generation = 'M1'
 )
 $ErrorActionPreference = 'Stop'
@@ -28,7 +28,7 @@ foreach ($SecretName in @('db-root-password', 'admin-password')) {
 }
 $env:MEIXIN_TEST_SECRET_DIR = $ScratchDirectory.Replace('\', '/')
 $env:MEIXIN_TEST_SITE = "test_meixin_$($Generation.ToLower()).localhost"
-$env:MEIXIN_TEST_PORT = if ($Generation -eq 'M4') { '18084' } else { '18081' }
+$env:MEIXIN_TEST_PORT = switch ($Generation) { 'M4' { '18084' } 'M4B' { '18085' } default { '18081' } }
 $ComposeArgs = @('compose', '--project-name', "meixin_$($Generation.ToLower())_test", '-f', (Join-Path $PSScriptRoot 'test-compose.yml'))
 function Invoke-TestCompose {
     & docker @ComposeArgs @args

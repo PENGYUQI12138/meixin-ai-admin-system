@@ -12,5 +12,12 @@
   "role_name": "Meixin Scheduler",
   "desk_access": 1,
   "disabled": 0
+ },
+ {
+  "doctype": "Role",
+  "name": "Meixin Finance",
+  "role_name": "Meixin Finance",
+  "desk_access": 1,
+  "disabled": 0
  }
 ]

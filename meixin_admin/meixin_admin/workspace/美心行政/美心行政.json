@@ -14,7 +14,7 @@
  "sequence_id": 1,
  "is_hidden": 0,
  "hide_custom": 0,
- "content": "[{\"id\":\"mx_heading\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>美心行政</b></span>\",\"col\":12}},{\"id\":\"mx_intro\",\"type\":\"paragraph\",\"data\":{\"text\":\"确认排课与上课执行后，在课包概览查看已付金额、剩余课时及不可变权益流水。\",\"col\":12}},{\"id\":\"mx_shortcut_0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"学生档案\",\"col\":4}},{\"id\":\"mx_shortcut_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教师档案\",\"col\":4}},{\"id\":\"mx_shortcut_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课程档案\",\"col\":4}},{\"id\":\"mx_shortcut_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教室档案\",\"col\":4}},{\"id\":\"mx_shortcut_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"单节排课\",\"col\":4}},{\"id\":\"mx_shortcut_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"周课表\",\"col\":4}},{\"id\":\"mx_shortcut_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"上课执行\",\"col\":4}},{\"id\":\"mx_shortcut_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课消流水\",\"col\":4}},{\"id\":\"mx_shortcut_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"机构设置\",\"col\":4}},{\"id\":\"mx_shortcut_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课包产品\",\"col\":4}},{\"id\":\"mx_shortcut_10\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"学生已购课包\",\"col\":4}},{\"id\":\"mx_shortcut_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"收款记录\",\"col\":4}},{\"id\":\"mx_shortcut_12\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课时权益流水\",\"col\":4}}]",
+ "content": "[{\"id\":\"mx_heading\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>美心行政</b></span>\",\"col\":12}},{\"id\":\"mx_intro\",\"type\":\"paragraph\",\"data\":{\"text\":\"确认排课与上课执行后，在课包概览查看已付金额、剩余课时及不可变权益流水。\",\"col\":12}},{\"id\":\"mx_shortcut_0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"学生档案\",\"col\":4}},{\"id\":\"mx_shortcut_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教师档案\",\"col\":4}},{\"id\":\"mx_shortcut_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课程档案\",\"col\":4}},{\"id\":\"mx_shortcut_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教室档案\",\"col\":4}},{\"id\":\"mx_shortcut_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"单节排课\",\"col\":4}},{\"id\":\"mx_shortcut_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"周课表\",\"col\":4}},{\"id\":\"mx_shortcut_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"上课执行\",\"col\":4}},{\"id\":\"mx_shortcut_7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课消流水\",\"col\":4}},{\"id\":\"mx_shortcut_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"机构设置\",\"col\":4}},{\"id\":\"mx_shortcut_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课包产品\",\"col\":4}},{\"id\":\"mx_shortcut_10\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"学生已购课包\",\"col\":4}},{\"id\":\"mx_shortcut_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"收款记录\",\"col\":4}},{\"id\":\"mx_shortcut_12\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"课时权益流水\",\"col\":4}},{\"id\":\"mx_pay_heading\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>教师工资</b></span>\",\"col\":12}},{\"id\":\"mx_pay_shortcut_0\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"教师工资结算\",\"col\":4}},{\"id\":\"mx_pay_shortcut_1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"工资规则版本\",\"col\":4}},{\"id\":\"mx_pay_shortcut_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"工资调整事项\",\"col\":4}},{\"id\":\"mx_pay_shortcut_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"工资付款与冲正\",\"col\":4}},{\"id\":\"mx_pay_shortcut_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"工资结算报表\",\"col\":4}}]",
  "shortcuts": [
   {
    "type": "DocType",
@@ -105,6 +105,40 @@
    "label": "机构设置",
    "doc_view": "List",
    "color": "#64748b"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Teacher Pay Sheet",
+   "label": "教师工资结算",
+   "doc_view": "List",
+   "color": "#2563eb"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Teacher Pay Rule",
+   "label": "工资规则版本",
+   "doc_view": "List",
+   "color": "#64748b"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Teacher Pay Adjustment",
+   "label": "工资调整事项",
+   "doc_view": "List",
+   "color": "#b45309"
+  },
+  {
+   "type": "DocType",
+   "link_to": "MX Teacher Pay Payment",
+   "label": "工资付款与冲正",
+   "doc_view": "List",
+   "color": "#7c3aed"
+  },
+  {
+   "type": "Report",
+   "link_to": "教师工资结算概览",
+   "label": "工资结算报表",
+   "color": "#16a34a"
   }
  ],
  "links": [],
@@ -118,6 +152,9 @@
   },
   {
    "role": "Meixin Scheduler"
+  },
+  {
+   "role": "Meixin Finance"
   }
  ]
 }

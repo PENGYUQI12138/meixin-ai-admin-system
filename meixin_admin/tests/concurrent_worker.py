@@ -6,7 +6,7 @@ import sys
 
 def main():
     config = json.loads(sys.stdin.readline())
-    if config.get("site") not in {"test_meixin_m1.localhost", "test_meixin_m4.localhost"}:
+    if config.get("site") not in {"test_meixin_m1.localhost", "test_meixin_m4.localhost", "test_meixin_m4b.localhost"}:
         raise RuntimeError("拒绝在非隔离站点启动并发测试。")
     import frappe
     from meixin_admin.scheduling import acquire_schedule_lock
@@ -17,7 +17,7 @@ def main():
     try:
         assert_isolated_site()
         frappe.flags.in_test = True
-        frappe.set_user("Administrator")
+        frappe.set_user(config.get("user") or "Administrator")
         doctype = {
             "submit": "MX Session", "teacher": "MX Teacher", "room": "MX Room",
             "execution_submit": "MX Session Execution", "session_cancel": "MX Session",
@@ -26,10 +26,15 @@ def main():
             "package_create": "MX Student",
             "teacher_confirm": "MX Session Execution",
             "execution_cancel": "MX Session Execution",
+            "pay_create": "MX Teacher",
+            "pay_check": "MX Teacher Pay Sheet",
+            "pay_approve": "MX Teacher Pay Sheet",
+            "pay_payment": "MX Teacher Pay Sheet",
+            "pay_reverse": "MX Teacher Pay Payment",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
-            not doc.demo_batch or not doc.demo_batch.startswith(("TEST-M1-", "TEST-M2-", "TEST-M3-", "TEST-M4-"))
+            not doc.demo_batch or not doc.demo_batch.startswith(("TEST-M1-", "TEST-M2-", "TEST-M3-", "TEST-M4-", "TEST-M4B-"))
         ):
             raise RuntimeError("并发进程拒绝修改非本测试标记数据。")
         if config["hold"]:
@@ -39,7 +44,20 @@ def main():
             raise RuntimeError("并发测试缺少执行信号。")
         print("ATTEMPT", flush=True)
         try:
-            if config["operation"] in {"submit", "execution_submit", "payment_submit"}:
+            if config["operation"].startswith("pay_"):
+                from meixin_admin import teacher_payroll
+
+                args = config.get("field") or {}
+                operation = {
+                    "pay_create": teacher_payroll.create_sheet,
+                    "pay_check": teacher_payroll.check_sheet,
+                    "pay_approve": teacher_payroll.approve_sheet,
+                    "pay_payment": teacher_payroll.record_pay_payment,
+                    "pay_reverse": teacher_payroll.reverse_pay_payment,
+                }[config["operation"]]
+                result_name = operation(**args)
+                doc.name = result_name
+            elif config["operation"] in {"submit", "execution_submit", "payment_submit"}:
                 doc.submit()
             elif config["operation"] == "credit_adjust":
                 from meixin_admin.entitlements import adjust_credits

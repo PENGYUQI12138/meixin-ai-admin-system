@@ -87,7 +87,7 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
                     existing.exception_reason or None) == reason and cint(existing.effect_minutes) == minutes:
                 return existing.name
             frappe.throw(f"执行单已有不同内容的教师课时记录 {existing.name}，不能重复确认。")
-        return _insert({
+        entry = _insert({
             "execution": source.name, "session": session.name,
             "teacher": session.teacher,
             "teacher_name_snapshot": frappe.db.get_value("MX Teacher", session.teacher, "teacher_name"),
@@ -100,7 +100,11 @@ def confirm_teaching(execution, actual_start=None, actual_end=None, taught=1, ex
             "confirmed_by": frappe.session.user, "confirmed_at": now_datetime(),
             "idempotency_key": f"teacher-confirm:{source.name}",
             "demo_batch": session.demo_batch,
-        }).name
+        })
+        from meixin_admin.teacher_payroll import on_hour_confirmed
+
+        on_hour_confirmed(entry)
+        return entry.name
 
 
 def reverse_execution_hours(execution):
@@ -125,4 +129,8 @@ def reverse_execution_hours(execution):
         confirmed_at=now_datetime(), exception_reason=f"撤销执行单 {execution.name}",
         idempotency_key=f"teacher-reversal:{original.name}",
     )
-    return _insert(values)
+    reversal = _insert(values)
+    from meixin_admin.teacher_payroll import on_hour_reversed
+
+    on_hour_reversed(original, reversal)
+    return reversal
