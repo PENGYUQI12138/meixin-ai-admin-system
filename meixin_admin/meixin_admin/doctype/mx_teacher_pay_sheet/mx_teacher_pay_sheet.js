@@ -7,7 +7,7 @@ frappe.ui.form.on("MX Teacher Pay Sheet", {
 			return;
 		}
 		frm.set_intro(frm.doc.status === "已批准" ?
-			"原批准账已冻结。来源撤销、后补等变更通过调整事项处理；付款仅登记实际线下全额付款。" :
+			"原批准账已冻结。来源变更或金额录入错误追加调整；付款按凭据与核算版本确认，已发生差异如实待财务处理。" :
 			"行政核对人数与来源后，交财务重新检查并批准。正常课程一节 90 分钟，不按分钟折算。", "blue");
 		if (mx_payroll.admin() && frm.doc.status === "待核对") {
 			frm.add_custom_button("编辑明细", () => mx_payroll.open_editor(frm.doc));
@@ -30,8 +30,16 @@ frappe.ui.form.on("MX Teacher Pay Sheet", {
 				"选择履职所需来源摘要", "查看");
 		});
 		const balance = await mx_payroll.show_balance(frm);
+		if (frm.doc.status === "已批准" && (mx_payroll.admin() || mx_payroll.finance())) {
+			frm.add_custom_button("申请明细更正", () => mx_payroll.correction_dialog(frm));
+		}
 		if (mx_payroll.finance() && balance.status === "待付款") {
 			frm.add_custom_button("登记实际付款", () => mx_payroll.payment_dialog(frm));
+		}
+		const reversed = new Set((balance.payments || []).map((row) => row.reversal_of).filter(Boolean));
+		const active_payment = (balance.payments || []).some((row) => row.operation_type === "付款" && !reversed.has(row.name));
+		if (mx_payroll.finance() && frm.doc.status === "已批准" && !active_payment) {
+			frm.add_custom_button("登记已发生付款差异", () => mx_payroll.payment_dialog(frm, true));
 		}
 	},
 });

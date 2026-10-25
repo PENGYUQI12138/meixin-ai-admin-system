@@ -23,7 +23,7 @@ def assert_isolated_site():
         raise RuntimeError("本轮并发集成测试只验证现场同型 MariaDB 数据库。")
 
 
-def run(audit_only=False, m4_only=False, m4b_only=False):
+def run(audit_only=False, m4_only=False, m4b_only=False, m4b_review_only=False):
     """bench --site test_meixin_m1.localhost execute meixin_admin.tests.run.run"""
     assert_isolated_site()
     previous_user = frappe.session.user
@@ -31,7 +31,9 @@ def run(audit_only=False, m4_only=False, m4b_only=False):
     try:
         frappe.flags.in_test = True
         frappe.set_user("Administrator")
-        if m4b_only:
+        if m4b_review_only:
+            suite = unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m4b_review")
+        elif m4b_only:
             suite = unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m4b")
         elif m4_only:
             suite = unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m4")
@@ -49,6 +51,7 @@ def run(audit_only=False, m4_only=False, m4b_only=False):
                 unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m3"),
                 unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m4"),
                 unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m4b"),
+                unittest.defaultTestLoader.loadTestsFromName("meixin_admin.tests.test_m4b_review"),
             ])
         result = unittest.TextTestRunner(verbosity=2).run(suite)
         if not result.wasSuccessful():

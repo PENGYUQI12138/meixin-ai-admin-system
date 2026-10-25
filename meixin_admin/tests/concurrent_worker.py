@@ -31,6 +31,9 @@ def main():
             "pay_approve": "MX Teacher Pay Sheet",
             "pay_payment": "MX Teacher Pay Sheet",
             "pay_reverse": "MX Teacher Pay Payment",
+            "pay_adjustment": "MX Teacher Pay Adjustment",
+            "pay_correction": "MX Teacher Pay Sheet",
+            "pay_difference": "MX Teacher Pay Sheet",
         }[config["operation"]]
         doc = frappe.get_single(doctype) if doctype == "MX Settings" else frappe.get_doc(doctype, config["name"])
         if doctype != "MX Settings" and (
@@ -54,6 +57,9 @@ def main():
                     "pay_approve": teacher_payroll.approve_sheet,
                     "pay_payment": teacher_payroll.record_pay_payment,
                     "pay_reverse": teacher_payroll.reverse_pay_payment,
+                    "pay_adjustment": teacher_payroll.approve_adjustment,
+                    "pay_correction": teacher_payroll.request_pay_correction,
+                    "pay_difference": teacher_payroll.record_pay_difference,
                 }[config["operation"]]
                 result_name = operation(**args)
                 doc.name = result_name

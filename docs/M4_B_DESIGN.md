@@ -1,6 +1,6 @@
 # M4-B 教师工资基础核算
 
-2026-10-23，Asia/Shanghai。用户已确认本设计业务口径并授权隔离开发、迁移设计及虚构数据测试；不授权合并、正式迁移或部署。
+2026-10-25，Asia/Shanghai。用户已确认原设计并授权隔离开发；本次进一步授权修复 Work 对 d351bdc 的三项发现、补测及继续草稿 PR 流程。不授权合并、正式迁移或部署。
 
 ## 基线和正式部署现状
 
@@ -43,9 +43,12 @@
 - `check_sheet(sheet)` / `withdraw_sheet(sheet)`：行政核对或撤回未批准单。行政核对必须提供实际教师归属无争议、人数完整等依据，特殊金额填写原因。
 - `approve_sheet(sheet)`：仅财务，重新检查核对快照并提交。
 - `approve_adjustment(adjustment, amount, reason)`：仅财务，原账不变，提交调整决定；同内容重试返回原项，不同内容拒绝。
-- `record_pay_payment(sheet, paid_at, payment_method, reference_no, request_id)`：仅财务，服务器计算整单净应付，拒绝待处理事件、零/负金额、有效付款已存在。
+- `record_pay_payment(sheet, paid_at, payment_method, reference_no, request_id, actual_amount, balance_version)`：仅财务，必须明确确认实际付款金额及打开窗口时的核算版本。两者纳入请求幂等内容，事务锁内以当前数据复算版本并核对金额；版本变化或实际金额不等于整单净应付时拒绝，不替换输入。旧客户端缺少两项输入时拒绝。
+- `record_pay_difference(同上, reason, basis)`：独立的已发生付款差异登记，仅财务在重新核对当前版本后使用；保存真实实际金额、当前核算额、差异原因及依据。允许当前净应付零/负或仍有待处理调整时保留已发生的真实正数付款，不替代正常付款批准；保留待处理状态，不自动退款/扣款。与普通付款共用单活动付款和冲正周期唯一约束，不增加分次付款或补款功能。此事实登记不要求已付之后授课来源仍有效。
+- `request_pay_correction(sheet, amount, reason, basis, request_id, line_index=None, related_adjustment=None)`：行政或财务申请，二选一关联已批准原结算行或同单已批准调整。amount 为追加差额，不是更正后的总额。保存原目标、已批准调整集合、原因、依据、申请人及幂等请求快照，不修改原账和课次占用。
+- 更正申请仍由 `approve_adjustment` 财务批准；目标快照或已批准调整集合变化时拒绝，防止并发申请基于同一旧金额重复批准。`reject_pay_correction(adjustment, reason)` 仅财务对更正申请作出明确驳回决定并保留零金额记录；不允许驳回来源撤销事项。旧申请被驳回后可重新核对、另提新请求。驳回不等于批准零元，原决定不可改写。
 - `reverse_pay_payment(payment, reason, request_id)`：仅财务，追加唯一反向付款；不表示银行撤回或已退款。
-- `get_pay_balance(sheet)`：权限感知的原批准额、已批准调整、净应付、有效付款、差额及状态。
+- `get_pay_balance(sheet)`：权限感知的原批准额、已批准调整、净应付、有效付款、差额、状态及核算版本。版本包含父单核对身份、调整状态和付款/冲正事实；金额恢复相同也不会恢复旧版本。写操作使用框架原生 for_update 文档加载，不在锁定名称后读取旧事务快照。
 - `get_source_summary(hour_entry)` / `list_pay_sources(teacher, from_date, to_date)` / `list_pay_teachers()`：只返回教师/课程名称、课次标识、时间、名单人数、是否有人到课及异常类别等履职摘要，不返回学生姓名、电话、名单、执行单原文或来源原因原文。
 
 普通课程原始起止恰为 90 分钟、正分钟且有学生到课、无时间异常/归属争议才可正常计价。特殊课程只能引用有效已授课来源；不能用特殊金额给已取消课程绕过计薪限制。独立工作事项使用固定费的 work_key/description，不冒充授课来源。
@@ -55,6 +58,8 @@
 工资角色 gate 与旧业务角色 gate 分开。`Meixin Finance` 不加入旧 `BUSINESS_ROLES`；不开放教师/学生/排课/执行单原始文档。工资快照中教师及来源标识使用 Data，通过受控摘要接口查看。报表和 CSV/XLSX 导出都校验工资读取权限。禁止单独 DocShare；无业务角色、Guest、仅 System Manager 不能绕过。
 
 复用 Desk 单据与 Script Report；不引入独立前端、银行转账、完整会计总账或通用薪酬引擎。管理员超级账户仍遵循框架能力，业务权限不声称限制数据库管理员。
+
+报表日期条件仅筛选工资明细；整单净应付、有效付款和差额在首个所选明细行展示，列名明确“整单”，每行同时给出完整结算期间。页面提示与CSV/XLSX导出采用同一范围定义，不按所选课程或日期分摊实际付款。
 
 ## 迁移与验收
 

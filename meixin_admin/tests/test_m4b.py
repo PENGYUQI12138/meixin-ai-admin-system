@@ -140,8 +140,11 @@ class TestM4B(unittest.TestCase):
         return sheet
 
     def payment(self, sheet, request_id=None):
+        balance = pay.get_pay_balance(sheet)
         return pay.record_pay_payment(sheet, str(now_datetime()), "现金", "隔离测试实际付款",
-                                      request_id or uuid.uuid4().hex)
+                                      request_id or uuid.uuid4().hex,
+                                      actual_amount=balance["net_payable"],
+                                      balance_version=balance["balance_version"])
 
     def money(self, sheet, field="net_payable"):
         return Decimal(str(pay.get_pay_balance(sheet)[field]))
@@ -450,10 +453,12 @@ class TestM4B(unittest.TestCase):
     def test_24_payment_idempotency_reversal_and_fresh_registration(self):
         sheet = self.approved([self.line(self.lesson()[2])])
         key, paid_at = uuid.uuid4().hex, str(now_datetime())
-        first = pay.record_pay_payment(sheet, paid_at, "现金", "唯一凭据", key)
-        self.assertEqual(pay.record_pay_payment(sheet, paid_at, "现金", "唯一凭据", key), first)
+        confirmation = {"actual_amount": 100,
+                        "balance_version": pay.get_pay_balance(sheet)["balance_version"]}
+        first = pay.record_pay_payment(sheet, paid_at, "现金", "唯一凭据", key, **confirmation)
+        self.assertEqual(pay.record_pay_payment(sheet, paid_at, "现金", "唯一凭据", key, **confirmation), first)
         with self.assertRaises(frappe.ValidationError):
-            pay.record_pay_payment(sheet, paid_at, "现金", "不同凭据", key)
+            pay.record_pay_payment(sheet, paid_at, "现金", "不同凭据", key, **confirmation)
         with self.assertRaises(frappe.ValidationError):
             self.payment(sheet)
         reverse_key = uuid.uuid4().hex
@@ -564,7 +569,8 @@ class TestM4B(unittest.TestCase):
         self.race("pay_approve", sheet, {"sheet": sheet})
         self.assertEqual(pay.approve_sheet(sheet), sheet)
         payment_args = {"sheet": sheet, "paid_at": str(now_datetime()), "payment_method": "现金",
-                        "reference_no": "并发付款同一凭据", "request_id": uuid.uuid4().hex}
+                        "reference_no": "并发付款同一凭据", "request_id": uuid.uuid4().hex,
+                        "actual_amount": 100, "balance_version": pay.get_pay_balance(sheet)["balance_version"]}
         results = self.race("pay_payment", sheet, payment_args)
         self.assertEqual(pay.record_pay_payment(**payment_args), results[0]["name"])
         self.assertEqual(frappe.db.count("MX Teacher Pay Payment", {"sheet": sheet}), 1)
@@ -597,7 +603,8 @@ class TestM4B(unittest.TestCase):
         _, execution, hour = self.lesson()
         sheet = self.approved([self.line(hour)])
         args = {"sheet": sheet, "paid_at": str(now_datetime()), "payment_method": "现金",
-                "reference_no": "付款先取得锁", "request_id": uuid.uuid4().hex}
+                "reference_no": "付款先取得锁", "request_id": uuid.uuid4().hex,
+                "actual_amount": 100, "balance_version": pay.get_pay_balance(sheet)["balance_version"]}
         results = self.race("pay_payment", sheet, args, "execution_cancel", execution.name, {})
         if not results[1]["ok"]:
             frappe.get_doc("MX Session Execution", execution.name).cancel()
@@ -609,7 +616,8 @@ class TestM4B(unittest.TestCase):
         _, execution, hour = self.lesson()
         sheet = self.approved([self.line(hour)])
         args = {"sheet": sheet, "paid_at": str(now_datetime()), "payment_method": "现金",
-                "reference_no": "取消先取得锁", "request_id": uuid.uuid4().hex}
+                "reference_no": "取消先取得锁", "request_id": uuid.uuid4().hex,
+                "actual_amount": 100, "balance_version": pay.get_pay_balance(sheet)["balance_version"]}
         results = self.race("execution_cancel", execution.name, {}, "pay_payment", sheet, args)
         self.assertFalse(results[1]["ok"], results)
         with self.assertRaises(frappe.ValidationError):

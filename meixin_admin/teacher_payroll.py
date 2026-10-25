@@ -129,7 +129,7 @@ def _locked(doctype, name, lock=True):
     rows = frappe.db.sql(f"SELECT name FROM `tab{doctype}` WHERE name=%s" + clause, (name,))
     if not rows:
         frappe.throw("工资单据不存在。")
-    doc = frappe.get_doc(doctype, rows[0][0])
+    doc = frappe.get_doc(doctype, rows[0][0], for_update=lock)
     doc.check_permission("read")
     return doc
 
@@ -534,6 +534,84 @@ def on_hour_reversed(original, reversal):
 
 
 @frappe.whitelist()
+def request_pay_correction(sheet, amount, reason, basis, request_id,
+                           line_index=None, related_adjustment=None):
+    require_pay_read()
+    if amount is None or amount == "":
+        frappe.throw("更正申请须明确填写追加差额；原账不改写。")
+    amount = decimal_amount(amount)
+    reason = _text(reason, "更正原因", required=True)
+    basis = _text(basis, "更正依据", required=True)
+    related_adjustment = _text(related_adjustment, "原调整", 140)
+    if bool(related_adjustment) == (line_index is not None):
+        frappe.throw("请选择原结算明细或已批准调整中的一个更正目标。")
+    line_index = _integer(line_index, "原明细行号") if line_index is not None else None
+    payload = dict(sheet=sheet, amount=str(amount), reason=reason, basis=basis,
+                   line_index=line_index, related_adjustment=related_adjustment)
+    with schedule_write():
+        request_id, prior = _new_request(ADJUSTMENT, request_id, payload)
+        if prior:
+            return prior.name
+        doc = _locked(SHEET, sheet)
+        if doc.docstatus != 1:
+            frappe.throw("未批准工资请行政撤回后修订，只有已批准原账可以追加更正。")
+        target = _correction_target(doc, line_index, related_adjustment)
+        correction = frappe.get_doc(dict(
+            doctype=ADJUSTMENT, sheet=doc.name, teacher=doc.teacher, currency="CNY",
+            event_type="更正", source_event=_claim("C", doc.name, request_id),
+            line_index=target["line_index"], related_adjustment=related_adjustment,
+            source_snapshot=_json(target), target_fingerprint=_digest(target),
+            reason=reason, basis=basis, suggested_amount=amount,
+            requested_by=frappe.session.user, requested_at=now_datetime(),
+            request_id=request_id, request_payload=_json(payload), demo_batch=doc.demo_batch,
+        ))
+        return _save(correction)
+
+
+def _correction_target(sheet, line_index, related_adjustment):
+    if related_adjustment:
+        original = _locked(ADJUSTMENT, related_adjustment)
+        if original.sheet != sheet.name or original.docstatus != 1 or original.decision == "驳回":
+            frappe.throw("更正目标必须是本单已经批准的有效调整。")
+        line_index = original.line_index
+        target = dict(adjustment=original.name, amount=str(decimal_amount(original.amount)),
+                      source_snapshot_digest=_digest(original.source_snapshot),
+                      decision_reason=original.decision_reason)
+    else:
+        if not line_index or line_index > len(sheet.lines):
+            frappe.throw("原结算明细行号不存在。")
+        line = sheet.lines[line_index - 1]
+        target = dict(line=line.name, amount=str(decimal_amount(line.amount)),
+                      kind=line.kind, class_size=line.class_size, headcount_basis=line.headcount_basis,
+                      source_snapshot=line.source_snapshot, description=line.description)
+    approved = frappe.db.sql(
+        f"SELECT name, amount, decision FROM `tab{ADJUSTMENT}` "
+        "WHERE sheet=%s AND docstatus=1 ORDER BY name FOR UPDATE", (sheet.name,), as_dict=True,
+    )
+    return dict(sheet=sheet.name, line_index=line_index, target=target,
+                approved_adjustments=[dict(name=a.name, amount=str(decimal_amount(a.amount)),
+                                           decision=a.decision) for a in approved])
+
+
+@frappe.whitelist()
+def reject_pay_correction(adjustment, reason):
+    require_finance()
+    reason = _text(reason, "驳回更正申请原因", required=True)
+    with schedule_write():
+        doc = _locked(ADJUSTMENT, adjustment)
+        _locked(SHEET, doc.sheet)
+        if doc.event_type != "更正":
+            frappe.throw("来源变更事项须由财务决定金额，不能作为更正申请驳回。")
+        if doc.docstatus == 1:
+            if doc.decision == "驳回" and doc.decision_reason == reason:
+                return doc.name
+            frappe.throw("该申请已有财务决定，不得改写。")
+        doc.amount, doc.decision, doc.decision_reason = Decimal("0.00"), "驳回", reason
+        doc.approved_by, doc.approved_at = frappe.session.user, now_datetime()
+        return _save(doc, submit=True)
+
+
+@frappe.whitelist()
 def approve_adjustment(adjustment, amount, reason):
     require_finance()
     if amount is None or amount == "":
@@ -544,11 +622,15 @@ def approve_adjustment(adjustment, amount, reason):
         doc = _locked(ADJUSTMENT, adjustment)
         original_sheet = _locked(SHEET, doc.sheet)
         if doc.docstatus == 1:
-            if decimal_amount(doc.amount) != amount or doc.decision_reason != reason:
+            if doc.decision == "驳回" or decimal_amount(doc.amount) != amount or doc.decision_reason != reason:
                 frappe.throw("该调整已批准为不同内容，不得改写。")
             return doc.name
+        if doc.event_type == "更正":
+            target = _correction_target(original_sheet, doc.line_index, doc.related_adjustment)
+            if _digest(target) != doc.target_fingerprint:
+                frappe.throw("更正目标或已批准调整已变化，请驳回旧申请后重新核对并申请。")
         decimal_amount(_balance(original_sheet)["net_payable"] + amount)
-        doc.amount, doc.decision_reason = amount, reason
+        doc.amount, doc.decision, doc.decision_reason = amount, "批准", reason
         doc.approved_by, doc.approved_at = frappe.session.user, now_datetime()
         return _save(doc, submit=True)
 
@@ -557,13 +639,15 @@ def _balance(doc, lock=True):
     clause = " FOR UPDATE" if lock else ""
     adjustments = frappe.db.sql(
         f"""SELECT name, docstatus, event_type, reason, suggested_amount, amount, decision_reason,
-                   hour_entry, source_root, approved_by, approved_at
+                   hour_entry, source_root, approved_by, approved_at, line_index,
+                   related_adjustment, basis, requested_by, requested_at, decision
             FROM `tab{ADJUSTMENT}` WHERE sheet=%s ORDER BY creation,name""" + clause,
         (doc.name,), as_dict=True,
     )
     payments = frappe.db.sql(
         f"""SELECT name, operation_type, amount, cash_effect, paid_at, payment_method,
-                   reference_no, reason, reversal_of, handled_by
+                   reference_no, reason, reversal_of, handled_by, balance_version,
+                   net_payable_snapshot, is_difference, basis
             FROM `tab{PAYMENT}` WHERE sheet=%s ORDER BY creation,name""" + clause,
         (doc.name,), as_dict=True,
     )
@@ -584,9 +668,14 @@ def _balance(doc, lock=True):
         status = "已付款" if active else "无需付款"
     else:
         status = "待付款"
+    version = _digest(dict(sheet=doc.name, docstatus=doc.docstatus, fingerprint=doc.check_fingerprint,
+                           total=str(decimal_amount(doc.total_amount)),
+                           adjustments=[(a.name, a.docstatus, str(decimal_amount(a.amount)),
+                                         a.decision, a.approved_at) for a in adjustments],
+                           payments=[(p.name, str(decimal_amount(p.cash_effect))) for p in payments]))
     return dict(total_amount=decimal_amount(doc.total_amount), adjustment_amount=adjustment_amount,
                 net_payable=net, net_paid=paid, outstanding=outstanding, status=status,
-                payments=payments, adjustments=adjustments)
+                payments=payments, adjustments=adjustments, balance_version=version)
 
 
 @frappe.whitelist()
@@ -636,13 +725,37 @@ def _paid_at(value):
 
 
 @frappe.whitelist()
-def record_pay_payment(sheet, paid_at, payment_method, reference_no, request_id):
+def record_pay_payment(sheet, paid_at, payment_method, reference_no, request_id,
+                       actual_amount=None, balance_version=None):
+    return _record_payment(sheet, paid_at, payment_method, reference_no, request_id,
+                           actual_amount, balance_version)
+
+
+@frappe.whitelist()
+def record_pay_difference(sheet, paid_at, payment_method, reference_no, request_id,
+                          actual_amount, balance_version, reason, basis):
+    return _record_payment(sheet, paid_at, payment_method, reference_no, request_id,
+                           actual_amount, balance_version, difference=True, reason=reason, basis=basis)
+
+
+def _record_payment(sheet, paid_at, payment_method, reference_no, request_id,
+                    actual_amount, balance_version, *, difference=False, reason="", basis=""):
     require_finance()
+    if actual_amount is None or actual_amount == "":
+        frappe.throw("请明确确认实际线下付款金额，系统不会替换为当前应付金额。")
+    actual_amount = decimal_amount(actual_amount)
+    if actual_amount <= 0:
+        frappe.throw("实际付款金额须大于零，不得生成虚假付款记录。")
+    balance_version = _text(balance_version, "核算版本", 64, True)
+    reason = _text(reason, "已发生付款差异原因", required=difference)
+    basis = _text(basis, "已发生付款凭据依据", required=difference)
     paid_at = _paid_at(paid_at)
     if payment_method not in ("现金", "微信", "支付宝", "银行", "其他"):
         frappe.throw("请选择有效的线下付款方式。")
     reference_no = _text(reference_no, "线下付款凭据或参考号", 140, True)
-    payload = dict(sheet=sheet, paid_at=str(paid_at), payment_method=payment_method, reference_no=reference_no)
+    payload = dict(sheet=sheet, paid_at=str(paid_at), payment_method=payment_method, reference_no=reference_no,
+                   actual_amount=str(actual_amount), balance_version=balance_version,
+                   difference=difference, reason=reason, basis=basis)
     with schedule_write():
         request_id, prior = _new_request(PAYMENT, request_id, payload)
         if prior:
@@ -650,19 +763,28 @@ def record_pay_payment(sheet, paid_at, payment_method, reference_no, request_id)
         doc = _locked(SHEET, sheet)
         if doc.docstatus != 1:
             frappe.throw("只能登记已批准工资的实际付款。")
-        _assert_events_resolved(doc)
+        if not difference:
+            _assert_events_resolved(doc)
         balance = _balance(doc)
-        if balance["status"] == "待处理调整":
+        if balance_version != balance["balance_version"]:
+            frappe.throw("核算版本已变化，登记未保存。请重新核对；已经实际付款请用已发生付款差异登记保留真实金额。")
+        if not difference and balance["status"] == "待处理调整":
             frappe.throw("工资来源有待处理调整，财务批准更正后才能付款。")
-        if balance["net_payable"] <= 0:
+        if not difference and balance["net_payable"] <= 0:
             frappe.throw("净应付为零或负数，不得生成付款记录；负数须另行财务处理。")
+        if not difference and actual_amount != balance["net_payable"]:
+            frappe.throw("实际付款金额与本次整单净应付不一致；已发生付款须核对后通过差异登记，不会自动替换金额。")
+        if difference and actual_amount == balance["net_payable"] and balance["status"] != "待处理调整":
+            frappe.throw("实际金额与净应付一致且无待处理事项，请使用普通整单付款登记。")
         if _active_payment(balance):
             frappe.throw("该工资单已有有效整单付款，不得重复登记；登记有误须先冲正。")
         cycle = next((p.name for p in reversed(balance["payments"]) if p.operation_type == "冲正"), "initial")
         payment = frappe.get_doc(dict(
             doctype=PAYMENT, sheet=doc.name, teacher=doc.teacher, currency="CNY", operation_type="付款",
-            amount=balance["net_payable"], cash_effect=balance["net_payable"], paid_at=paid_at,
+            amount=actual_amount, cash_effect=actual_amount, paid_at=paid_at,
             payment_method=payment_method, reference_no=reference_no, handled_by=frappe.session.user,
+            balance_version=balance_version, net_payable_snapshot=balance["net_payable"],
+            is_difference=int(difference), reason=reason, basis=basis,
             request_id=request_id, request_payload=_json(payload), active_key=_claim("P", doc.name, cycle),
             demo_batch=doc.demo_batch,
         ))
@@ -791,6 +913,7 @@ def get_pay_report(filters=None):
             if (first and day < first) or (last and day > last):
                 continue
             data.append(dict(sheet=doc.name, teacher=doc.teacher_name_snapshot, pay_date=day, currency="CNY",
+                             monetary_scope=f"整单 {doc.from_date} 至 {doc.to_date}；日期仅筛明细，付款不分摊",
                              kind=line.kind, description=line.description or line.hour_entry,
                              class_size=line.class_size or None, amount=line.amount, status=balance["status"],
                              net_payable=balance["net_payable"] if first_row else None,
@@ -805,7 +928,8 @@ def get_pay_report(filters=None):
         {"fieldname": "description", "label": "课次或覆盖说明", "fieldtype": "Data", "width": 200},
         {"fieldname": "class_size", "label": "计薪人数", "fieldtype": "Int", "width": 80},
         {"fieldname": "amount", "label": "原明细金额", "fieldtype": "Currency", "options": "currency", "width": 100},
+        {"fieldname": "monetary_scope", "label": "整单金额所属期间（不分摊付款）", "fieldtype": "Data", "width": 340},
         {"fieldname": "status", "label": "结算状态", "fieldtype": "Data", "width": 120},
-    ] + [{"fieldname": key, "label": label + "（单据首行）", "fieldtype": "Currency", "options": "currency", "width": 170}
+    ] + [{"fieldname": key, "label": "整单" + label + "（所选明细首行）", "fieldtype": "Currency", "options": "currency", "width": 210}
          for key, label in (("net_payable", "净应付"), ("net_paid", "已登记付款"), ("outstanding", "待处理差额"))]
     return columns, data

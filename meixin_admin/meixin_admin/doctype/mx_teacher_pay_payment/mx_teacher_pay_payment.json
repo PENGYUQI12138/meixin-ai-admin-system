@@ -9,12 +9,16 @@
   "teacher",
   "operation_type",
   "amount",
+  "net_payable_snapshot",
+  "balance_version",
+  "is_difference",
   "cash_effect",
   "currency",
   "paid_at",
   "payment_method",
   "reference_no",
   "reason",
+  "basis",
   "reversal_of",
   "active_key",
   "handled_by",
@@ -53,12 +57,32 @@
   {
    "fieldname": "amount",
    "fieldtype": "Currency",
-   "label": "登记金额（CNY）",
+   "label": "实际付款登记金额（CNY）",
    "read_only": 1,
    "options": "currency",
    "precision": 2,
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "net_payable_snapshot",
+   "fieldtype": "Currency",
+   "label": "登记时核算净应付（CNY）",
+   "options": "currency",
+   "precision": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "balance_version",
+   "fieldtype": "Data",
+   "label": "登记时核算版本",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_difference",
+   "fieldtype": "Check",
+   "label": "已发生付款差异登记",
+   "read_only": 1
   },
   {
    "fieldname": "cash_effect",
@@ -104,7 +128,13 @@
   {
    "fieldname": "reason",
    "fieldtype": "Small Text",
-   "label": "冲正原因",
+   "label": "差异登记或冲正原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "basis",
+   "fieldtype": "Small Text",
+   "label": "差异登记依据",
    "read_only": 1
   },
   {

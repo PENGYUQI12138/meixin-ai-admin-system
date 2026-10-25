@@ -195,29 +195,93 @@ window.mx_payroll = {
 			await frm.reload_doc();
 		});
 	},
-	payment_dialog(frm) {
+	async payment_dialog(frm, difference = false) {
+		const balance = await this.call("get_pay_balance", { sheet: frm.doc.name });
+		const balance_version = balance.balance_version;
 		const request_id = crypto.randomUUID();
 		let pending = false;
 		const dialog = new frappe.ui.Dialog({
-			title: "登记实际线下付款",
+			title: difference ? "登记已发生付款差异" : "登记实际线下付款",
 			fields: [
 				{ fieldtype: "HTML", fieldname: "notice", options:
-					'<div class="alert alert-info">请先完成线下实际付款，再登记整单净应付。服务器将重新计算金额；本操作不会转账。</div>' },
+					difference ? '<div class="alert alert-warning">仅用于整单付款已实际发生后，与当前核算不一致的事实登记。请按凭据填写真实金额、原因与依据；差额保留待财务处理，不自动退款、扣款或生成分次付款。</div>' :
+						'<div class="alert alert-info">请按线下付款凭据填写实际金额。金额和核算版本必须与本次确认一致；提交时变化会拒绝登记，不会替换实际金额。本操作不会转账。</div>' },
+				{ fieldname: "expected_amount", fieldtype: "Float", precision: 2, label: "本次核算净应付（CNY）", read_only: 1, default: balance.net_payable },
+				{ fieldname: "actual_amount", fieldtype: "Float", precision: 2, label: "凭据上的实际付款金额（CNY）", reqd: 1 },
 				{ fieldname: "paid_at", fieldtype: "Datetime", label: "实际付款时间", reqd: 1, default: frappe.datetime.now_datetime() },
-				{ fieldname: "payment_method", fieldtype: "Select", label: "付款方式", reqd: 1, options: "现金\n微信\n支付宝\n银行\n其他" },
+				{ fieldname: "payment_method", fieldtype: "Select", label: "付款方式", reqd: 1, options: "\n现金\n微信\n支付宝\n银行\n其他" },
 				{ fieldname: "reference_no", fieldtype: "Data", label: "线下付款参考号或凭据标识", reqd: 1 },
+				...(difference ? [
+					{ fieldname: "reason", fieldtype: "Small Text", label: "已发生付款与当前核算不一致的原因", reqd: 1 },
+					{ fieldname: "basis", fieldtype: "Small Text", label: "实际付款及差异核对依据", reqd: 1 },
+				] : []),
+				{ fieldname: "confirmed", fieldtype: "Check", label: "我已核对凭据，以上金额确已实际支付，且本单整单付款只登记一次", reqd: 1 },
 			],
-			primary_action_label: "确认已付款并登记",
+			primary_action_label: difference ? "保留真实付款并登记差异" : "确认已付款并登记",
 			primary_action: async (values) => {
 				if (pending) return;
+				if (!values.confirmed) return frappe.msgprint("请先确认凭据及实际付款事实。");
 				pending = true;
 				try {
-					await this.call("record_pay_payment", { sheet: frm.doc.name, ...values, request_id });
+					const { actual_amount, paid_at, payment_method, reference_no, reason, basis } = values;
+					await this.call(difference ? "record_pay_difference" : "record_pay_payment", {
+						sheet: frm.doc.name, actual_amount, paid_at, payment_method, reference_no,
+						balance_version, request_id, ...(difference ? { reason, basis } : {}),
+					});
 					dialog.hide(); await frm.reload_doc();
+				} catch (error) {
+					await dialog.set_values(values);
+					throw error;
 				} finally { pending = false; }
 			},
 		});
 		dialog.show();
+	},
+	async correction_dialog(frm, related_adjustment = null) {
+		const sheet_name = related_adjustment ? frm.doc.sheet : frm.doc.name;
+		const sheet = related_adjustment ? null : frm.doc;
+		const request_id = crypto.randomUUID();
+		let pending = false;
+		const targets = (sheet?.lines || []).map((line) => ({ value: String(line.idx),
+			label: this.escape(["第" + line.idx + "行", line.kind, line.pay_date, line.description || line.hour_entry || line.work_key, "原额 CNY " + line.amount].filter(Boolean).join(" · ")) }));
+		const dialog = new frappe.ui.Dialog({
+			title: related_adjustment ? "申请更正已批准调整" : "申请工资明细更正",
+			size: "large",
+			fields: [
+				{ fieldtype: "HTML", fieldname: "notice", options: '<div class="alert alert-info">更正只追加差额，原账、付款与课次占用保留。请填写差额而非更正后的总额，例如原100应为120填+20。申请须由财务另行批准；已付款差额留待处理，不自动扣款或退款。</div>' },
+				{ fieldname: "target", fieldtype: "Data", label: "更正原调整", default: related_adjustment, read_only: 1, hidden: !related_adjustment },
+				{ fieldname: "line_index", fieldtype: "Select", label: "原结算明细", options: [{ value: "", label: "请选择原结算明细" }, ...targets], reqd: !related_adjustment, hidden: !!related_adjustment },
+				{ fieldname: "amount", fieldtype: "Float", precision: 2, label: "建议追加差额（CNY，负数减少应付）", reqd: 1 },
+				{ fieldname: "reason", fieldtype: "Small Text", label: "更正原因", reqd: 1 },
+				{ fieldname: "basis", fieldtype: "Small Text", label: "事实、金额及核对依据", reqd: 1 },
+			],
+			primary_action_label: "提交更正申请",
+			primary_action: async (values) => {
+				if (pending) return;
+				pending = true;
+				try {
+					const name = await this.call("request_pay_correction", {
+						sheet: sheet_name, amount: values.amount, reason: values.reason, basis: values.basis, request_id,
+						...(related_adjustment ? { related_adjustment } : { line_index: values.line_index }),
+					});
+					dialog.hide();
+					frappe.set_route("Form", "MX Teacher Pay Adjustment", name);
+				} finally { pending = false; }
+			},
+		});
+		dialog.show();
+	},
+	reject_correction_dialog(frm) {
+		let pending = false;
+		frappe.prompt([{ fieldname: "reason", fieldtype: "Small Text", label: "驳回原因（申请保留，不改原账）", reqd: 1 }],
+			async (values) => {
+				if (pending) return;
+				pending = true;
+				try {
+					await this.call("reject_pay_correction", { adjustment: frm.doc.name, reason: values.reason });
+					await frm.reload_doc();
+				} finally { pending = false; }
+			}, "财务驳回更正申请", "驳回并保留申请");
 	},
 	reversal_dialog(frm, payment) {
 		const request_id = crypto.randomUUID();
@@ -275,13 +339,13 @@ window.mx_payroll = {
 		const adjustment_rows = adjustments.map((row) =>
 			'<tr><td><a class="mx-pay-adjustment" href="#" data-name="' + this.escape(row.name) + '">' +
 			this.escape(row.name) + "</a></td><td>" + this.escape(row.event_type) + "</td><td>" +
-			this.escape(row.reason) + "</td><td>" + this.escape(row.docstatus === 1 ? "已批准" : "待财务处理") +
+			this.escape(row.reason) + "</td><td>" + this.escape(row.docstatus === 1 ? (row.decision === "驳回" ? "已驳回" : "已批准") : "待财务处理") +
 			"</td><td>" + this.escape(row.docstatus === 1 ? row.amount : row.suggested_amount) + "</td></tr>").join("");
 		const wrapper = frm.fields_dict.balance_overview.$wrapper;
 		wrapper.html('<div class="mb-3">' + metrics + '</div><h5>付款与冲正</h5><table class="table table-bordered table-sm">' +
 			"<thead><tr><th>记录</th><th>操作</th><th>金额</th><th>时间</th><th>方式</th><th>原记录或原因</th><th>操作</th></tr></thead><tbody>" +
 			(payment_rows || '<tr><td colspan="7">暂无付款登记</td></tr>') + "</tbody></table>" +
-			'<h5>来源变更调整事项</h5><table class="table table-bordered table-sm"><thead><tr><th>事项</th><th>事件</th><th>原因</th><th>状态</th><th>建议/批准金额</th></tr></thead><tbody>' +
+			'<h5>来源变更及工资更正事项</h5><table class="table table-bordered table-sm"><thead><tr><th>事项</th><th>事件</th><th>原因</th><th>状态</th><th>建议/批准金额</th></tr></thead><tbody>' +
 			(adjustment_rows || '<tr><td colspan="5">暂无调整事项</td></tr>') + "</tbody></table>");
 		wrapper.find(".mx-pay-reverse").on("click", (event) => this.reversal_dialog(frm, event.currentTarget.dataset.name));
 		wrapper.find(".mx-pay-adjustment").on("click", (event) => {

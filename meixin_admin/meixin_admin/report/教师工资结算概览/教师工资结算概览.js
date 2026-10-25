@@ -1,5 +1,7 @@
 frappe.query_reports["教师工资结算概览"] = {
 	async onload(report) {
+		report.page.main.find(".mx-pay-report-scope").remove();
+		report.page.main.prepend('<div class="alert alert-info mx-pay-report-scope">日期条件仅筛选工资明细。净应付、已登记付款和待处理差额按整张结算单展示，范围见“整单金额所属期间（不分摊付款）”；整单金额在所选明细首行列示，不按课程或筛选日期分摊实际付款。</div>');
 		if (mx_payroll.admin()) report.page.add_inner_button("新建工资单", () => mx_payroll.open_editor());
 		const teachers = await mx_payroll.call("list_pay_teachers");
 		const field = report.get_filter("teacher");

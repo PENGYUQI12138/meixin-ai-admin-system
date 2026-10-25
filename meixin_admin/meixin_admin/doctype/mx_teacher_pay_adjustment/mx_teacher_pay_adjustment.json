@@ -8,19 +8,26 @@
   "sheet",
   "teacher",
   "line_index",
+  "related_adjustment",
   "source_event",
   "event_type",
   "hour_entry",
   "source_root",
   "source_snapshot",
   "reason",
+  "basis",
+  "requested_by",
+  "requested_at",
   "suggested_amount",
   "amount",
   "currency",
+  "decision",
   "decision_reason",
   "approved_by",
   "approved_at",
   "request_id",
+  "request_payload",
+  "target_fingerprint",
   "demo_batch"
  ],
  "fields": [
@@ -49,6 +56,12 @@
    "read_only": 1
   },
   {
+   "fieldname": "related_adjustment",
+   "fieldtype": "Data",
+   "label": "更正原调整",
+   "read_only": 1
+  },
+  {
    "fieldname": "source_event",
    "fieldtype": "Data",
    "label": "来源事件",
@@ -61,7 +74,7 @@
    "fieldtype": "Select",
    "label": "事件类型",
    "read_only": 1,
-   "options": "撤销\n补录\n修订",
+   "options": "撤销\n补录\n修订\n更正",
    "reqd": 1,
    "in_list_view": 1
   },
@@ -80,13 +93,31 @@
   {
    "fieldname": "source_snapshot",
    "fieldtype": "Long Text",
-   "label": "事件来源快照",
+   "label": "来源或更正目标快照",
    "read_only": 1
   },
   {
    "fieldname": "reason",
    "fieldtype": "Small Text",
-   "label": "事件原因",
+   "label": "来源事件或更正申请原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "basis",
+   "fieldtype": "Small Text",
+   "label": "更正申请依据",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Data",
+   "label": "更正申请人",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "label": "更正申请时间",
    "read_only": 1
   },
   {
@@ -116,6 +147,13 @@
    "reqd": 1
   },
   {
+   "fieldname": "decision",
+   "fieldtype": "Select",
+   "label": "财务决定",
+   "options": "\n批准\n驳回",
+   "read_only": 1
+  },
+  {
    "fieldname": "decision_reason",
    "fieldtype": "Small Text",
    "label": "财务决定原因",
@@ -142,6 +180,24 @@
    "print_hide": 1,
    "no_copy": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "request_payload",
+   "fieldtype": "Long Text",
+   "label": "更正申请请求快照",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "target_fingerprint",
+   "fieldtype": "Data",
+   "label": "更正目标核对版本",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
   },
   {
    "fieldname": "demo_batch",
