@@ -1,0 +1,39 @@
+{
+  "baseline": "d351bdc",
+  "site": "test_meixin_m4.localhost",
+  "data": "fictional only",
+  "real_bank_transfer": false,
+  "verification": "real MariaDB and whitelisted service calls with commit boundaries; not HTTP",
+  "partial_date_report": {
+    "filtered_line_amount": "100.0",
+    "shown_net_payable": "220.00",
+    "label": "净应付（单据首行）",
+    "rows": 1,
+    "full_sheet_days": [
+      "2020-01-15",
+      "2020-01-16"
+    ],
+    "finding_reproduced": true
+  },
+  "payment_fact_drift": {
+    "old_window_net_payable": "220.00",
+    "fictional_actual_paid": "220.00",
+    "approved_adjustment": "-120.00",
+    "current_net_payable": "100.00",
+    "persisted_payment_amount": "100.0",
+    "persisted_cash_effect": "100.0",
+    "server_replaced_real_amount": true,
+    "finding_reproduced": true,
+    "payment_api_signature": "(sheet, paid_at, payment_method, reference_no, request_id)",
+    "separate_commits": true
+  },
+  "general_correction_entry": {
+    "exposed_adjustment_apis": [
+      "approve_adjustment"
+    ],
+    "request_adjustment_present": false,
+    "origin_creation_only_source_event": true,
+    "finding_reproduced": true
+  },
+  "old_history_unchanged_after_cleanup": true
+}

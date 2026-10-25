@@ -1,0 +1,22 @@
+{
+  "ordinary_finance_user": "m4b-uat-finance@example.invalid",
+  "headcount_sheet": "MX-TPS-00033",
+  "headcount_adjustment": "MX-TPA-00007",
+  "headcount_net_after": 120,
+  "fixed_sheet": "MX-TPS-00034",
+  "fixed_corrections": [
+    "MX-TPA-00008",
+    "MX-TPA-00009"
+  ],
+  "fixed_net_after": 280,
+  "paid_difference_sheet": "MX-TPS-00035",
+  "actual_payment": 220,
+  "current_net_payable": 100,
+  "outstanding": -120,
+  "date_filter_method": "Frappe native query-string route filters",
+  "date_filter": "2026-10-20",
+  "report_scope": "Whole settlement 2026-10-20 through 2026-10-22, actual payment not allocated",
+  "csv_downloaded": true,
+  "console_entries": 0,
+  "real_bank_transfer": false
+}

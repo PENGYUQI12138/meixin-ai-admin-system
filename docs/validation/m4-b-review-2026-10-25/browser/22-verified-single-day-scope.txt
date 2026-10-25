@@ -1,0 +1,225 @@
+- generic: 美心行政
+- generic: 美心行政
+- button:
+- generic: 通知
+- link "美心行政":
+  - /url: /desk/美心行政
+  - generic: 美心行政
+- link "教师工资结算":
+  - /url: /desk/mx-teacher-pay-sheet
+  - generic: 教师工资结算
+- link "工资规则版本":
+  - /url: /desk/mx-teacher-pay-rule
+  - generic: 工资规则版本
+- link "工资调整事项":
+  - /url: /desk/mx-teacher-pay-adjustment
+  - generic: 工资调整事项
+- link "工资付款与冲正":
+  - /url: /desk/mx-teacher-pay-payment
+  - generic: 工资付款与冲正
+- link "工资结算报表":
+  - /url: /desk/query-report/教师工资结算概览
+  - generic: 工资结算报表
+- paragraph
+- generic "用户菜单":
+  - generic "TEST-M4B-UAT-Meixin Finance":
+    - generic "TEST-M4B-UAT-Meixin Finance": TF
+- button:
+- list:
+  - generic: 教师工资结算概览
+- button "菜单":
+- generic: 日期条件仅筛选工资明细。净应付、已登记付款和待处理差额按整张结算单展示，范围见“整单金额所属期间（不分摊付款）”；整单金额在所选明细首行列示，不按课程或筛选日期分摊实际付款。
+- combobox:
+  - option "全部教师"
+  - option "TEST-M4B-UAT-虚构教师"
+  - option "TEST-M4B-REVIEW-UAT虚构教师" [selected]
+- generic: teacher
+- textbox "开始日期": 2026-10-20
+- generic: from_date
+- textbox "结束日期": 2026-10-20
+- generic: to_date
+- combobox:
+  - option [selected]
+  - option "待核对"
+  - option "已核对"
+  - option "待处理调整"
+  - option "待财务处理"
+  - option "无需付款"
+  - option "待付款"
+  - option "已付款"
+- generic: status
+- generic: 结算状态
+- generic "工资结算单":
+  - text: 工资结算单
+- generic "教师":
+  - text: 教师
+- generic "业务日期":
+  - text: 业务日期
+- generic "计费方式":
+  - text: 计费方式
+- generic "课次或覆盖说明":
+  - text: 课次或覆盖说明
+- generic "计薪人数":
+  - text: 计薪人数
+- generic "原明细金额":
+  - text: 原明细金额
+- generic "整单金额所属期间（不分摊付款）":
+  - text: 整单金额所属期间（不分摊付款）
+- generic "结算状态":
+  - text: 结算状态
+- generic "整单净应付（所选明细首行）":
+  - text: 整单净应付（所选明细首行）
+- generic "整单已登记付款（所选明细首行）":
+  - text: 整单已登记付款（所选明细首行）
+- generic "整单待处理差额（所选明细首行）":
+  - text: 整单待处理差额（所选明细首行）
+- textbox [disabled]
+- textbox "Filter based on 工资结算单"
+- textbox "Filter based on 教师"
+- textbox "Filter based on 业务日期"
+- textbox "Filter based on 计费方式"
+- textbox "Filter based on 课次或覆盖说明"
+- textbox "Filter based on 计薪人数"
+- textbox "Filter based on 原明细金额"
+- textbox "Filter based on 整单金额所属期间（不分摊付款）"
+- textbox "Filter based on 结算状态"
+- textbox "Filter based on 整单净应付（所选明细首行）"
+- textbox "Filter based on 整单已登记付款（所选明细首行）"
+- textbox "Filter based on 整单待处理差额（所选明细首行）"
+- row
+- generic "1"
+- generic "MX-TPS-00035":
+  - link "MX-TPS-00035":
+    - /url: /desk/mx-teacher-pay-sheet/MX-TPS-00035
+- generic "TEST-M4B-REVIEW-UAT虚构教师"
+- generic "2026-10-20"
+- generic "课程"
+- generic "MX-THE-00044"
+- generic "4":
+  - generic: "4"
+- generic "CNY 100.00":
+  - generic: CNY 100.00
+- generic "整单 2026-10-20 至 2026-10-22；日期仅筛明细，付款不分摊"
+- generic "待财务处理"
+- generic "CNY 100.00":
+  - generic: CNY 100.00
+- generic "CNY 220.00":
+  - generic: CNY 220.00
+- generic "CNY -120.00":
+  - generic: CNY -120.00
+- generic "2"
+- generic "MX-TPS-00032":
+  - link "MX-TPS-00032":
+    - /url: /desk/mx-teacher-pay-sheet/MX-TPS-00032
+- generic "TEST-M4B-REVIEW-UAT虚构教师"
+- generic "2026-10-20"
+- generic "课程"
+- generic "MX-THE-00041"
+- generic "4":
+  - generic: "4"
+- generic "CNY 100.00":
+  - generic: CNY 100.00
+- generic "整单 2026-10-20 至 2026-10-22；日期仅筛明细，付款不分摊"
+- generic "待付款"
+- generic "CNY 100.00":
+  - generic: CNY 100.00
+- generic "CNY 0.00":
+  - generic: CNY 0.00
+- generic "CNY 100.00":
+  - generic: CNY 100.00
+- textbox
+- text: 过滤条件可以用>,<,= 比较符，两个值之间用：表示范围， 如>5, <10, =20, 5:10
+- generic: 运行时间：0.008653秒
+- contentinfo
+- navigation:
+  - text: 十月,
+  - generic: "2026"
+- generic: 日
+- generic: 一
+- generic: 二
+- generic: 三
+- generic: 四
+- generic: 五
+- generic: 六
+- generic: "27"
+- generic: "28"
+- generic: "29"
+- generic: "30"
+- generic: "1"
+- generic: "2"
+- generic: "3"
+- generic: "4"
+- generic: "5"
+- generic: "6"
+- generic: "7"
+- generic: "8"
+- generic: "9"
+- generic: "10"
+- generic: "11"
+- generic: "12"
+- generic: "13"
+- generic: "14"
+- generic: "15"
+- generic: "16"
+- generic: "17"
+- generic: "18"
+- generic: "19"
+- generic: "20"
+- generic: "21"
+- generic: "22"
+- generic: "23"
+- generic: "24"
+- generic: "25"
+- generic: "26"
+- generic: "27"
+- generic: "28"
+- generic: "29"
+- generic: "30"
+- generic: "31"
+- generic: 今天
+- navigation:
+  - text: 十月,
+  - generic: "2026"
+- generic: 日
+- generic: 一
+- generic: 二
+- generic: 三
+- generic: 四
+- generic: 五
+- generic: 六
+- generic: "27"
+- generic: "28"
+- generic: "29"
+- generic: "30"
+- generic: "1"
+- generic: "2"
+- generic: "3"
+- generic: "4"
+- generic: "5"
+- generic: "6"
+- generic: "7"
+- generic: "8"
+- generic: "9"
+- generic: "10"
+- generic: "11"
+- generic: "12"
+- generic: "13"
+- generic: "14"
+- generic: "15"
+- generic: "16"
+- generic: "17"
+- generic: "18"
+- generic: "19"
+- generic: "20"
+- generic: "21"
+- generic: "22"
+- generic: "23"
+- generic: "24"
+- generic: "25"
+- generic: "26"
+- generic: "27"
+- generic: "28"
+- generic: "29"
+- generic: "30"
+- generic: "31"
+- generic: 今天

@@ -1,6 +1,6 @@
 # 美心 Frappe 行政系统 M1 / M2
 
-当前进度（2026-10-24）：M4-A 已正式部署；M4-B 工资基础核算在独立分支实现并完成隔离验证，待用户验收，未合并或部署。见 [M4-B设计](docs/M4_B_DESIGN.md)、[实际验收材料](docs/M4_B_ACCEPTANCE.md)、[迁移与回退设计](docs/M4_B_MIGRATION.md)。下文保留原M1/M2使用及历史说明。
+当前进度（2026-10-25）：M4-A已正式部署；M4-B已完成Work三项复核修复及本轮隔离验证，进入草稿PR审查，未合并或部署。见[本轮复核修复报告与231/25实际证据](docs/M4_B_REVIEW_2026-10-25.md)、[M4-B设计](docs/M4_B_DESIGN.md)、[首轮历史验收](docs/M4_B_ACCEPTANCE.md)、[迁移与回退设计](docs/M4_B_MIGRATION.md)。下文保留原M1/M2历史说明。
 
 独立 App `meixin_admin`，模块 `Meixin Admin`。使用现有 Frappe Desk，不修改 Frappe/ERPNext 核心。M1 提供档案、排课和周课表；M2 在冻结排课之上增加执行单、学生考勤和不可变课消决策流水。
 
