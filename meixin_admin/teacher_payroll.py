@@ -629,7 +629,9 @@ def approve_adjustment(adjustment, amount, reason):
             target = _correction_target(original_sheet, doc.line_index, doc.related_adjustment)
             if _digest(target) != doc.target_fingerprint:
                 frappe.throw("更正目标或已批准调整已变化，请驳回旧申请后重新核对并申请。")
-        decimal_amount(_balance(original_sheet)["net_payable"] + amount)
+        balance = _balance(original_sheet)
+        net = decimal_amount(balance["net_payable"] + amount)
+        decimal_amount(net - balance["net_paid"])
         doc.amount, doc.decision, doc.decision_reason = amount, "批准", reason
         doc.approved_by, doc.approved_at = frappe.session.user, now_datetime()
         return _save(doc, submit=True)
@@ -778,6 +780,8 @@ def _record_payment(sheet, paid_at, payment_method, reference_no, request_id,
             frappe.throw("实际金额与净应付一致且无待处理事项，请使用普通整单付款登记。")
         if _active_payment(balance):
             frappe.throw("该工资单已有有效整单付款，不得重复登记；登记有误须先冲正。")
+        paid = decimal_amount(balance["net_paid"] + actual_amount)
+        decimal_amount(balance["net_payable"] - paid)
         cycle = next((p.name for p in reversed(balance["payments"]) if p.operation_type == "冲正"), "initial")
         payment = frappe.get_doc(dict(
             doctype=PAYMENT, sheet=doc.name, teacher=doc.teacher, currency="CNY", operation_type="付款",

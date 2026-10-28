@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-28",
+  "base": "856dc8dc40dcb501339dc9aa7b353432bfdba42f",
+  "unchanged_original_test_files": [
+    "meixin_admin/tests/test_m1.py",
+    "meixin_admin/tests/test_m2.py",
+    "meixin_admin/tests/test_m3.py",
+    "meixin_admin/tests/test_m4.py",
+    "meixin_admin/tests/test_m4b.py"
+  ],
+  "old_review_methods_preserved": 33,
+  "old_review_tests_preserved": 25,
+  "new_review_tests": 2,
+  "js_syntax_files": 21,
+  "js_errors": 0
+}

@@ -10,6 +10,7 @@ from frappe.utils import now_datetime
 from werkzeug.test import EnvironBuilder
 
 from meixin_admin import teacher_payroll as pay
+from meixin_admin.money import MAX_CNY
 from meixin_admin.tests import test_m4b
 
 
@@ -487,3 +488,72 @@ class TestM4BReview(unittest.TestCase):
         self.assertEqual(frappe.get_doc(pay.SHEET, sheet).as_json(), original_sheet)
         for name, original in originals.items():
             self.assertEqual(frappe.get_doc(pay.ADJUSTMENT, name).as_json(), original)
+
+    def test_26_negative_net_rejects_difference_cash_that_would_overflow_balance_or_report(self):
+        sheet = self.fixture.approved([self.fixture.fixed(work_key=self.fixture.batch, amount=100)])
+        frappe.set_user(self.finance)
+        correction = self.correction(sheet, -150)
+        self.approve(correction, -150)
+        args = self.cash_args(sheet)
+        args.update(actual_amount=str(MAX_CNY), reason="虚构已发生上限金额付款",
+                    basis="仅验证金额边界，不是真实付款")
+        self.fixture.commit()
+        before = self.balance(sheet)
+        self.assertEqual(before["net_payable"], -50)
+        with self.assertRaises(frappe.ValidationError):
+            self.call("record_pay_difference", **args)
+        self.assertEqual(frappe.db.count(pay.PAYMENT, {"sheet": sheet}), 0)
+        self.assertEqual(self.balance(sheet), before)
+        frappe.db.rollback()
+        self.assertEqual(frappe.db.count(pay.PAYMENT, {"sheet": sheet}), 0)
+        self.assertEqual(self.balance(sheet), before)
+        _, rows = self.call("get_pay_report", filters={"teacher": self.fixture.teacher.name})
+        self.assertEqual(len(rows), 1)
+        for field in ("net_payable", "net_paid", "outstanding"):
+            self.assertEqual(Decimal(str(rows[0][field])), before[field])
+
+        safe_args = args | {"actual_amount": str(MAX_CNY - 50)}
+        payment = self.call("record_pay_difference", **safe_args)
+        self.assertEqual(Decimal(str(frappe.db.get_value(pay.PAYMENT, payment, "cash_effect"))), MAX_CNY - 50)
+        self.assertEqual(self.balance(sheet)["outstanding"], -MAX_CNY)
+        _, rows = self.call("get_pay_report", filters={"teacher": self.fixture.teacher.name})
+        self.assertEqual(Decimal(str(rows[0]["net_paid"])), MAX_CNY - 50)
+        self.assertEqual(Decimal(str(rows[0]["outstanding"])), -MAX_CNY)
+
+    def test_27_paid_correction_rejects_overflow_without_leaving_an_approval(self):
+        sheet = self.fixture.approved([self.fixture.fixed(work_key=self.fixture.batch, amount=100)])
+        frappe.set_user(self.finance)
+        args = self.cash_args(sheet)
+        args.update(actual_amount=str(MAX_CNY), reason="虚构已发生上限金额付款",
+                    basis="仅验证已付款更正边界，不是真实付款")
+        payment = self.call("record_pay_difference", **args)
+        correction = self.correction(sheet, -150)
+        self.fixture.commit()
+        original_payment = frappe.get_doc(pay.PAYMENT, payment).as_json()
+        original_request = frappe.get_doc(pay.ADJUSTMENT, correction).as_json()
+        before = self.balance(sheet)
+        with self.assertRaises(frappe.ValidationError):
+            self.approve(correction, -150)
+        self.assertEqual(frappe.get_doc(pay.ADJUSTMENT, correction).as_json(), original_request)
+        self.assertEqual(frappe.db.count(pay.ADJUSTMENT, {"sheet": sheet, "docstatus": 1}), 0)
+        self.assertEqual(self.balance(sheet), before)
+        frappe.db.rollback()
+        self.assertEqual(frappe.get_doc(pay.ADJUSTMENT, correction).as_json(), original_request)
+        self.assertEqual(frappe.get_doc(pay.PAYMENT, payment).as_json(), original_payment)
+        self.assertEqual(frappe.db.count(pay.ADJUSTMENT, {"sheet": sheet, "docstatus": 1}), 0)
+        self.assertEqual(frappe.db.count(pay.PAYMENT, {"sheet": sheet}), 1)
+        self.assertEqual(self.balance(sheet), before)
+        _, rows = self.call("get_pay_report", filters={"teacher": self.fixture.teacher.name})
+        self.assertEqual(len(rows), 1)
+        for field in ("net_payable", "net_paid", "outstanding"):
+            self.assertEqual(Decimal(str(rows[0][field])), before[field])
+
+        self.approve(correction, -100)
+        balance = self.balance(sheet)
+        self.assertEqual(balance["net_payable"], 0)
+        self.assertEqual(balance["net_paid"], MAX_CNY)
+        self.assertEqual(balance["outstanding"], -MAX_CNY)
+        _, rows = self.call("get_pay_report", filters={"teacher": self.fixture.teacher.name})
+        self.assertEqual(Decimal(str(rows[0]["net_payable"])), 0)
+        self.assertEqual(Decimal(str(rows[0]["net_paid"])), MAX_CNY)
+        self.assertEqual(Decimal(str(rows[0]["outstanding"])), -MAX_CNY)

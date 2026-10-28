@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-28",
+  "origin": "http://localhost:18085",
+  "scope": "ordinary account HTTP login and read-only fixture queries; no browser clicks or approvals",
+  "cases_ready": true,
+  "users_and_passwords_unchanged": true,
+  "credentials_in_evidence": false,
+  "results": [
+    {
+      "role": "Meixin Manager",
+      "real_http_login": true,
+      "fixture_reads": [
+        {
+          "sheet": "MX-TPS-00036",
+          "status": "待核对",
+          "net_payable": 220,
+          "payments": 0,
+          "adjustments": 0
+        },
+        {
+          "sheet": "MX-TPS-00037",
+          "status": "已批准",
+          "net_payable": 100,
+          "payments": 0,
+          "adjustments": 0
+        },
+        {
+          "sheet": "MX-TPS-00038",
+          "status": "已批准",
+          "net_payable": 300,
+          "payments": 0,
+          "adjustments": 0
+        },
+        {
+          "sheet": "MX-TPS-00039",
+          "status": "已批准",
+          "net_payable": 220,
+          "payments": 0,
+          "adjustments": 0
+        }
+      ]
+    },
+    {
+      "role": "Meixin Finance",
+      "real_http_login": true,
+      "fixture_reads": [
+        {
+          "sheet": "MX-TPS-00036",
+          "status": "待核对",
+          "net_payable": 220,
+          "payments": 0,
+          "adjustments": 0
+        },
+        {
+          "sheet": "MX-TPS-00037",
+          "status": "已批准",
+          "net_payable": 100,
+          "payments": 0,
+          "adjustments": 0
+        },
+        {
+          "sheet": "MX-TPS-00038",
+          "status": "已批准",
+          "net_payable": 300,
+          "payments": 0,
+          "adjustments": 0
+        },
+        {
+          "sheet": "MX-TPS-00039",
+          "status": "已批准",
+          "net_payable": 220,
+          "payments": 0,
+          "adjustments": 0
+        }
+      ]
+    }
+  ]
+}

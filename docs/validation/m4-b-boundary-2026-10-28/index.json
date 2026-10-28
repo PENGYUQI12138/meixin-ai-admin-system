@@ -1,0 +1,120 @@
+{
+  "date": "2026-10-28",
+  "accepted_base": "856dc8dc40dcb501339dc9aa7b353432bfdba42f",
+  "payroll_tests": 81,
+  "boundary_tests_included": 2,
+  "money_unit_tests": 2,
+  "old_152_rerun": false,
+  "synthetic_data_only": true,
+  "credentials_and_backups_included": false,
+  "files": [
+    {
+      "file": "baseline-boundary.log.gz",
+      "bytes": 1154,
+      "sha256": "3ac01b44e20ceb502081e880d2e5464f654d4eb0163278b5111fea6ef00d9eb8",
+      "original_sha256": "06253599f973fe0590784b2577b37f772c9ffd5fc31ef27eefe176f96735ec61"
+    },
+    {
+      "file": "baseline-boundary.json",
+      "bytes": 11496,
+      "sha256": "6818f675556888c98d22ee950a683e28392a455b33e1a3b1be2d14e7c98a6c18"
+    },
+    {
+      "file": "fixed-boundary.log.gz",
+      "bytes": 779,
+      "sha256": "a5c998f890edf42c53aff681975432af76aa643671241858625daf9ffb4bb70e",
+      "original_sha256": "fe23f8172e7ada9a38f35ebbe068b8d4a2f659a5aa66e829eb5a3ed41f4391ff"
+    },
+    {
+      "file": "fixed-boundary.json",
+      "bytes": 11496,
+      "sha256": "d77e533423d940ab79c5ab17c7ca91ae0a75777606f07061f25db383405c5735"
+    },
+    {
+      "file": "payroll-initial-settings-guard.log.gz",
+      "bytes": 3592,
+      "sha256": "52cfc695ab5ed539ade0251f0eafaeed0e35eaa3defb3fbe98374b44dd5fa5f7",
+      "original_sha256": "5106cf7350d5eae32d322a71d441b85d94a56e7a71cf6f636338d0a215c90438"
+    },
+    {
+      "file": "payroll-initial-settings-guard.json",
+      "bytes": 11498,
+      "sha256": "82b0eb4b93a8ec39cd53621cfbaa9136ae35831d66ba29d23216c2f33c8b05b9"
+    },
+    {
+      "file": "test-settings-restoration.json",
+      "bytes": 202,
+      "sha256": "50d0f4145e922d8b988814c324f7898c806b04d79f06ea35f34895b76a6722e0"
+    },
+    {
+      "file": "payroll-regression-final.log.gz",
+      "bytes": 3347,
+      "sha256": "2d6adc9da48d17bffdfd07f5bfb79ea7c4b4305bc289b3bf352770099007e94f",
+      "original_sha256": "aba679511ce8090327d7d7b5d62dd7db6712c3c3ddb91be2cd506397bc1c815e"
+    },
+    {
+      "file": "payroll-regression-final.json",
+      "bytes": 11497,
+      "sha256": "8f92d6439f37314ec08daa74ef1a353b4302b9046b8d9f507e5a7475228f6f66"
+    },
+    {
+      "file": "runner-dispatch-failed.log.gz",
+      "bytes": 756,
+      "sha256": "6e671d8a4264d8bed41012bf006a41926e859bfc3008fbe1fc041c58794cb913",
+      "original_sha256": "2215191f6d0c2bb56f1500fa24eee335b07728e0c26a80052ef831cb323ee39f"
+    },
+    {
+      "file": "money-unit-tests.log.gz",
+      "bytes": 134,
+      "sha256": "18c9892a976ad59d7e2d64c029e62124bbcecaaa5dd20ccb841747645ea1d7fd",
+      "original_sha256": "68ec1b2e8a0f97d731de62a393c0d122fe8afa9101473131ebe78f0638b2c37b"
+    },
+    {
+      "file": "independent-review.md",
+      "bytes": 1931,
+      "sha256": "8e4ab6c6cdfa180fbea714af2d4d3468f62a46a19b4cbe9fc6a348118a808ea2"
+    },
+    {
+      "file": "manual-uat-preparation.log.gz",
+      "bytes": 312,
+      "sha256": "447beb387367525c971fc3d674275fe28bfbaa27700e1a38211a71a30a98d814",
+      "original_sha256": "1128c741a707145f7647913a2686d72438821476a30073d5209de62a6fd971fc"
+    },
+    {
+      "file": "manual-uat-preparation-initial-failed.log.gz",
+      "bytes": 840,
+      "sha256": "23b2fb56e977312f2746781f10d107cd1f1a04920f3fb054eef9dcbfde901e3d",
+      "original_sha256": "0e5d6db1e04cf6c1d246ddabb26d1e6477543b24e85eafb492b1b3da5f18a517"
+    },
+    {
+      "file": "manual-uat-http-readiness.json",
+      "bytes": 1872,
+      "sha256": "e7ce905a57cf8bb311150cc06eeb8faa5a7418a847d7a92f3b6233c4e7dde221"
+    },
+    {
+      "file": "retained-assertions-and-js.json",
+      "bytes": 450,
+      "sha256": "62db369719d8d94bbce2b77f5e62b95519ba565674994cc0a5a233cd2ad8de0c"
+    },
+    {
+      "file": "production-image-check.json",
+      "bytes": 1083,
+      "sha256": "d160391dc3fc8fb9a38ed40c3ad53674996c4b8635e6b8acff37c026273571dc"
+    },
+    {
+      "file": "prepare-manual-uat.py",
+      "bytes": 4283,
+      "sha256": "44fbebe9c431d87436d680b2a542432baa197441f73deddf8c02c8020a5acd3b"
+    },
+    {
+      "file": "boundary_run.py",
+      "bytes": 2730,
+      "sha256": "6f17a92e0cee99d1788c5197d80b983b2b485669b198ad9859f207a89539bc37"
+    },
+    {
+      "file": "restore_test_settings.py",
+      "bytes": 1758,
+      "sha256": "f223305c416ea59d50981dd8d01c1854b21098b3db6ab5ababbc09ac133583ff"
+    }
+  ]
+}
