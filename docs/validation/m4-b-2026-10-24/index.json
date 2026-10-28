@@ -1,0 +1,104 @@
+{
+  "synthetic_data_only": true,
+  "date": "2026-10-24",
+  "source_commit": "78fc478",
+  "credentials_and_backups_excluded": true,
+  "files": [
+    {
+      "sha256": "21b38efcff37d7d239816427da24f5dcd709db85f062f9e0383604045f83d582",
+      "decompression_verified": true,
+      "file": "m4b-full-regression.log.gz",
+      "original_sha256": "e2091da007987fd0a0bd9f40b8fa7a56669fd46257317c3adcd6a8ffcb608c6f"
+    },
+    {
+      "sha256": "a6ef9f9ec8c3662d465821bf0ede44a47a616a6225f31dabfa5ed7931e36dc0f",
+      "decompression_verified": true,
+      "file": "m4b-latest-payroll-regression.log.gz",
+      "original_sha256": "0ac29c45675d98b2a3e2a354baa67cf34b01fba4f43d6ead38c0df825453bbda"
+    },
+    {
+      "sha256": "7845fed620cda91746aae298a4397558f221e9ef4a59eabd0ca2e02639939677",
+      "decompression_verified": true,
+      "file": "m4b-tests-initial.log.gz",
+      "original_sha256": "ac3332ed387b42e6636849b1551c828861b1eb3a8b9548f015032ac2e3157a1d"
+    },
+    {
+      "sha256": "beb4b999947fcc016f2726bc8b8a72147cf4d78b6cc1a9cbf3771ae39e0efa74",
+      "decompression_verified": true,
+      "file": "m4b-tests-second.log.gz",
+      "original_sha256": "3da368eca63dd01a0998c580d283df2677d2f7c703dfb4cc33337028edea6916"
+    },
+    {
+      "sha256": "b75a5c0e92a2a577f1b02415b1ba77dfb48482c518b19e80cdbc1b498954a655",
+      "decompression_verified": true,
+      "file": "m4b-latest-payroll-regression-initial.log.gz",
+      "original_sha256": "b4ca547f3d1a623eff1b9ba48b175cef43c8d313cdf26a5e38a3572719aa88c2"
+    },
+    {
+      "sha256": "ce353894068b2d5b745b810c34af2e5b022e7ed68e8f3b327835816613ac1986",
+      "decompression_verified": true,
+      "file": "m4b-static-checks-final.log.gz",
+      "original_sha256": "53453fac658072c39e1a3644e68b2c828759271f7fdfaac6da0db440ce28936b"
+    },
+    {
+      "sha256": "55458fdb64990e6a41140a845e07637f189ebb549b6bf679ad78283ae76ff556",
+      "decompression_verified": true,
+      "file": "m4b-money-unit-tests.log.gz",
+      "original_sha256": "68ec1b2e8a0f97d731de62a393c0d122fe8afa9101473131ebe78f0638b2c37b"
+    },
+    {
+      "sha256": "86931af725cfc7b61ded2b3d4866c10d381aee14a71a822161ea24958cae9996",
+      "decompression_verified": true,
+      "file": "m4b-unique-index-verification.log.gz",
+      "original_sha256": "c8e38e6d3c9a28d8896867d985f40801f6dd8c00a1828ee754f506d167cd8288"
+    },
+    {
+      "sha256": "f78d6f9fe91947c31be71dddd0915b72ff75352da0188d5b71d1c5a9d84e2639",
+      "decompression_verified": true,
+      "file": "m4b-cache-permission-recheck.log.gz",
+      "original_sha256": "3fa75f5355620d069f358a78e6fa8d9b85f30816744389a281bd0331e4d7a79c"
+    },
+    {
+      "sha256": "78dc083c8776b3a65a1175d387a388376fc9e85b08ca8a91d787db63dc122e40",
+      "decompression_verified": true,
+      "file": "m4b-boundary-regressions.log.gz",
+      "original_sha256": "eae05a32af67f428e3e86231cacce81d4e5c6647b7da35ebc5aa2aec4dd6fa9d"
+    },
+    {
+      "file": "fictional-finance-report.csv",
+      "sha256": "78d07ed1c0470dfb0bb456f31c969e334cd9735f8a886bdbc856986c5607e94c"
+    },
+    {
+      "file": "final-report.png",
+      "sha256": "dfc13cb3ea9e244810757bed2a4e83c634d46ac146d532d882cbccd8ba964e88"
+    },
+    {
+      "file": "upgrade-preparation.json",
+      "sha256": "c9479da665d42967fd68dc3fc92477c657cef33e9e4d324f6c375865f57f64c4"
+    },
+    {
+      "file": "private-secret-scan.json",
+      "sha256": "b245a37acd6eccefb7983fd44a2f927478af1577851e90e890b2121a03decc0c"
+    },
+    {
+      "file": "latest-regression-preservation.json",
+      "sha256": "c9aa083629f6e3dad17dfc4615ca09ecc8733fe51de0e110593d0a9d18c01235"
+    },
+    {
+      "file": "final-browser-check.json",
+      "sha256": "7560c4d56d8efa90b04d2faa728b47a09cf42737da15e7626cc33ad1a3077e06"
+    },
+    {
+      "file": "finance-reregistered.png",
+      "sha256": "466b5f669f7352fc77da374467a1222a2ca45d96796727ced6de5dc4861c5db0"
+    },
+    {
+      "file": "upgrade-resources.json",
+      "sha256": "3bc942b7e59497693ca9deede812a95796d558e49b886b0628f1e5a4d60aa400"
+    },
+    {
+      "file": "upgrade-summary.json",
+      "sha256": "01638584d08b377de314d6366521c440b9ddb423328d843f9bbeee254144dce9"
+    }
+  ]
+}

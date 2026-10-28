@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-28",
+  "site": "test_meixin_m4.localhost",
+  "restored_only_test_settings": true,
+  "original_snapshot_matches": true,
+  "database_restore": false,
+  "production_accessed": false
+}

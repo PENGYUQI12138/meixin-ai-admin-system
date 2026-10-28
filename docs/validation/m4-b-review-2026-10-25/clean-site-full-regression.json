@@ -1,0 +1,254 @@
+{
+  "mode": "full",
+  "site": "test_meixin_m4b.localhost",
+  "fixture_type": "new empty three-app test database; not a historical upgrade copy",
+  "scope": "real MariaDB/Frappe dispatcher/transaction tests, not browser HTTP",
+  "tests": {
+    "site": "test_meixin_m4b.localhost",
+    "tests_run": 231,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "old_history_unchanged": true,
+  "before": {
+    "facts": {
+      "MX Student": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Teacher": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Course": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Room": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session Student": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session Execution": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session Attendance": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Lesson Consumption Entry": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Package Plan": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Student Package": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Payment": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Lesson Credit Entry": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Teacher Hour Entry": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Settings": {
+        "count": 13,
+        "sha256": "019d7dd3320cb4b644fcce81a2be671477a7fc137939c611e92ad8ca7e2d3cfb"
+      }
+    },
+    "permissions": {
+      "count": 25,
+      "sha256": "fc76ab973d75dabc9a07ddb92d3e2c4ba867fb1bd3f7934cb0d67d27069b60b8"
+    },
+    "role_assignments": {
+      "Administrator": [
+        "Academics User",
+        "Accounts Manager",
+        "Accounts User",
+        "Administrator",
+        "All",
+        "Analytics",
+        "Auditor",
+        "Dashboard Manager",
+        "Delivery Manager",
+        "Delivery User",
+        "Desk User",
+        "Fleet Manager",
+        "Fulfillment User",
+        "Guest",
+        "HR Manager",
+        "HR User",
+        "Inbox User",
+        "Item Manager",
+        "Knowledge Base Contributor",
+        "Knowledge Base Editor",
+        "Maintenance Manager",
+        "Maintenance User",
+        "Manufacturing Manager",
+        "Manufacturing User",
+        "Marketing Manager",
+        "Newsletter Manager",
+        "Prepared Report User",
+        "Projects Manager",
+        "Projects User",
+        "Purchase Manager",
+        "Purchase Master Manager",
+        "Purchase User",
+        "Quality Manager",
+        "Report Manager",
+        "Sales Manager",
+        "Sales Master Manager",
+        "Sales User",
+        "Script Manager",
+        "Stock Manager",
+        "Stock User",
+        "Support Team",
+        "System Manager",
+        "Translator",
+        "Website Manager",
+        "Workspace Manager"
+      ],
+      "m4b-upgrade-admin@example.invalid": [],
+      "m4b-upgrade-scheduler@example.invalid": []
+    },
+    "balances": {}
+  },
+  "after": {
+    "facts": {
+      "MX Student": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Teacher": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Course": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Room": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session Student": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session Execution": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Session Attendance": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Lesson Consumption Entry": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Package Plan": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Student Package": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Payment": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Lesson Credit Entry": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Teacher Hour Entry": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "MX Settings": {
+        "count": 13,
+        "sha256": "019d7dd3320cb4b644fcce81a2be671477a7fc137939c611e92ad8ca7e2d3cfb"
+      }
+    },
+    "permissions": {
+      "count": 25,
+      "sha256": "fc76ab973d75dabc9a07ddb92d3e2c4ba867fb1bd3f7934cb0d67d27069b60b8"
+    },
+    "role_assignments": {
+      "Administrator": [
+        "Academics User",
+        "Accounts Manager",
+        "Accounts User",
+        "Administrator",
+        "All",
+        "Analytics",
+        "Auditor",
+        "Dashboard Manager",
+        "Delivery Manager",
+        "Delivery User",
+        "Desk User",
+        "Fleet Manager",
+        "Fulfillment User",
+        "Guest",
+        "HR Manager",
+        "HR User",
+        "Inbox User",
+        "Item Manager",
+        "Knowledge Base Contributor",
+        "Knowledge Base Editor",
+        "Maintenance Manager",
+        "Maintenance User",
+        "Manufacturing Manager",
+        "Manufacturing User",
+        "Marketing Manager",
+        "Newsletter Manager",
+        "Prepared Report User",
+        "Projects Manager",
+        "Projects User",
+        "Purchase Manager",
+        "Purchase Master Manager",
+        "Purchase User",
+        "Quality Manager",
+        "Report Manager",
+        "Sales Manager",
+        "Sales Master Manager",
+        "Sales User",
+        "Script Manager",
+        "Stock Manager",
+        "Stock User",
+        "Support Team",
+        "System Manager",
+        "Translator",
+        "Website Manager",
+        "Workspace Manager"
+      ],
+      "m4b-upgrade-admin@example.invalid": [],
+      "m4b-upgrade-scheduler@example.invalid": []
+    },
+    "balances": {}
+  }
+}

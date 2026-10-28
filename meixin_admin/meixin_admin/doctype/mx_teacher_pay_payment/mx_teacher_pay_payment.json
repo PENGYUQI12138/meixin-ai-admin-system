@@ -1,0 +1,225 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher Pay Payment",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "sheet",
+  "teacher",
+  "operation_type",
+  "amount",
+  "net_payable_snapshot",
+  "balance_version",
+  "is_difference",
+  "cash_effect",
+  "currency",
+  "paid_at",
+  "payment_method",
+  "reference_no",
+  "reason",
+  "basis",
+  "reversal_of",
+  "active_key",
+  "handled_by",
+  "request_id",
+  "request_payload",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "sheet",
+   "fieldtype": "Data",
+   "label": "结算单",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "teacher",
+   "fieldtype": "Data",
+   "label": "教师",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "operation_type",
+   "fieldtype": "Select",
+   "label": "操作类型",
+   "read_only": 1,
+   "options": "付款\n冲正",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "实际付款登记金额（CNY）",
+   "read_only": 1,
+   "options": "currency",
+   "precision": 2,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "net_payable_snapshot",
+   "fieldtype": "Currency",
+   "label": "登记时核算净应付（CNY）",
+   "options": "currency",
+   "precision": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "balance_version",
+   "fieldtype": "Data",
+   "label": "登记时核算版本",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_difference",
+   "fieldtype": "Check",
+   "label": "已发生付款差异登记",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cash_effect",
+   "fieldtype": "Currency",
+   "label": "付款净效果（CNY）",
+   "read_only": 1,
+   "options": "currency",
+   "precision": 2,
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "币种",
+   "options": "CNY",
+   "default": "CNY",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "paid_at",
+   "fieldtype": "Datetime",
+   "label": "实际付款或冲正时间",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "payment_method",
+   "fieldtype": "Select",
+   "label": "付款方式",
+   "read_only": 1,
+   "options": "现金\n微信\n支付宝\n银行\n其他",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_no",
+   "fieldtype": "Data",
+   "label": "线下参考号",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "差异登记或冲正原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "basis",
+   "fieldtype": "Small Text",
+   "label": "差异登记依据",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reversal_of",
+   "fieldtype": "Data",
+   "label": "冲正原付款",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "active_key",
+   "fieldtype": "Data",
+   "label": "有效付款唯一键",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "handled_by",
+   "fieldtype": "Data",
+   "label": "财务登记人",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "请求标识",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "request_payload",
+   "fieldtype": "Long Text",
+   "label": "登记请求快照",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Meixin Finance",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "autoname": "MX-TPP-.#####"
+}

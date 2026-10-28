@@ -1,0 +1,216 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher Pay Sheet",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "teacher",
+  "teacher_name_snapshot",
+  "from_date",
+  "to_date",
+  "status",
+  "balance_overview",
+  "lines",
+  "coverage",
+  "total_amount",
+  "currency",
+  "checked_by",
+  "checked_at",
+  "approved_by",
+  "approved_at",
+  "request_id",
+  "request_payload",
+  "input_json",
+  "check_fingerprint",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "teacher",
+   "fieldtype": "Data",
+   "label": "教师",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "teacher_name_snapshot",
+   "fieldtype": "Data",
+   "label": "教师姓名快照",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "开始日期",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "结束日期",
+   "read_only": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "核算状态",
+   "read_only": 1,
+   "options": "待核对\n已核对\n已批准",
+   "default": "待核对",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "balance_overview",
+   "fieldtype": "HTML",
+   "label": "结算余额与状态",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "工资明细",
+   "read_only": 1,
+   "options": "MX Teacher Pay Line"
+  },
+  {
+   "fieldname": "coverage",
+   "fieldtype": "Table",
+   "label": "来源覆盖关系",
+   "read_only": 1,
+   "options": "MX Teacher Pay Coverage"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "原核算总额（CNY）",
+   "read_only": 1,
+   "options": "currency",
+   "precision": 2,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "币种",
+   "read_only": 1,
+   "options": "CNY",
+   "default": "CNY",
+   "reqd": 1
+  },
+  {
+   "fieldname": "checked_by",
+   "fieldtype": "Data",
+   "label": "行政核对人",
+   "read_only": 1
+  },
+  {
+   "fieldname": "checked_at",
+   "fieldtype": "Datetime",
+   "label": "行政核对时间",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Data",
+   "label": "财务批准人",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_at",
+   "fieldtype": "Datetime",
+   "label": "财务批准时间",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "创建请求标识",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1,
+   "unique": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "request_payload",
+   "fieldtype": "Long Text",
+   "label": "创建请求快照",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "input_json",
+   "fieldtype": "Long Text",
+   "label": "行政录入快照",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "check_fingerprint",
+   "fieldtype": "Data",
+   "label": "核对指纹",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Meixin Finance",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "is_submittable": 1,
+ "autoname": "MX-TPS-.#####",
+ "title_field": "teacher_name_snapshot",
+ "search_fields": "teacher,teacher_name_snapshot"
+}

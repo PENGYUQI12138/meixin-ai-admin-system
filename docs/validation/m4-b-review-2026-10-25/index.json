@@ -1,0 +1,211 @@
+{
+  "date": "2026-10-25",
+  "implementation_commit": "39fedab",
+  "synthetic_data_only": true,
+  "credentials_configs_backups_excluded": true,
+  "test_scopes": {
+    "final_full": 231,
+    "final_review_subset": 25,
+    "counts_overlap": true,
+    "network_http_evidence": "browser/final-stale-http.json; native finance UI and CSV export",
+    "earlier_history_full_attempt": "230 tests, 3 existing fixture precondition failures retained"
+  },
+  "files": [
+    {
+      "file": "baseline-reproduction.log.gz",
+      "original_sha256": "c91f4ae974d28f8a01a1efb9873bc01d64efd0cc4e3c956025d468ecfc65786c",
+      "decompression_verified": true,
+      "bytes": 987,
+      "sha256": "282c001722eab9337881da6e5486fa2a7f895ac8fc97d23ca2b79fc48ceabd4e"
+    },
+    {
+      "file": "review-tests-initial.log.gz",
+      "original_sha256": "f43efd55f5800376276c272c06a7f8b97b4526de08ebd6d1d70939d9678969c5",
+      "decompression_verified": true,
+      "bytes": 2534,
+      "sha256": "73414d43ebef3c8cf440098121f3f5393dc2b95b7689dc007c6d08fcf3d5053a"
+    },
+    {
+      "file": "review-tests-final.log.gz",
+      "original_sha256": "607c8ffa85681083fc961626db85655fe9a648fceed0aa7d71e08998a2e50154",
+      "decompression_verified": true,
+      "bytes": 1606,
+      "sha256": "82d2fea887dc6653cb4f1e2f84a0ad45a3f3b0df9eb72e62594fa425c3cb280f"
+    },
+    {
+      "file": "review-tests-25-final.log.gz",
+      "original_sha256": "b82a856bb7a232c89f6b0a3546ed672fa67f106f7a888e644b7e43883525e78d",
+      "decompression_verified": true,
+      "bytes": 1675,
+      "sha256": "40374c8aad9f68089eb2590097e652aade133b4c283bcd9c642fa8a7a3c10d7b"
+    },
+    {
+      "file": "full-regression.log.gz",
+      "original_sha256": "ebecc7455c0415df8e83ec44865a684281b88499274270aad958767b7dba4016",
+      "decompression_verified": true,
+      "bytes": 7428,
+      "sha256": "21f69014803a273f395b3679fed216d7083a6f3efbee9ee80710312391affae4"
+    },
+    {
+      "file": "clean-site-full-regression.log.gz",
+      "original_sha256": "e5c2da2384f9db36091b07773ea0f252f7a93348e19e2519e9cf2ea50a6f3e3d",
+      "decompression_verified": true,
+      "bytes": 6726,
+      "sha256": "b5f40cb382dc8016ebb045ca59261e3e25e2e43d4c763a4c9d631ecb301bfca8"
+    },
+    {
+      "file": "money-unit-tests.log.gz",
+      "original_sha256": "4cd49ad0c73a8aa832fab522c6a78b7c7920d0020aa82b81b4234fa118a1a5f0",
+      "decompression_verified": true,
+      "bytes": 58,
+      "sha256": "57952b8a0a516520800a87d71b9e042f22f2804465a751f058c3919b8bd1cc2e"
+    },
+    {
+      "file": "isolated-review-migrate.log.gz",
+      "original_sha256": "8aa4f89941c5335a081b754affa216c8a009affd4d9b8451569394df95c0dae9",
+      "decompression_verified": true,
+      "bytes": 1605,
+      "sha256": "b320da610d4dad1ee7faa1817fd019526d65c118f2e6f048c621bfe0313105cf"
+    },
+    {
+      "file": "baseline-reproduction.json",
+      "bytes": 1214,
+      "sha256": "20bb591836f49adc6e857f065413e8db31c2f6c6cefe8693dcafc34cf76d84d0"
+    },
+    {
+      "file": "review-tests-initial.json",
+      "bytes": 11481,
+      "sha256": "56ed652adc1f1069d94e4b47047b92a46c07ac2822119b5431affa2684a26deb"
+    },
+    {
+      "file": "review-tests-final.json",
+      "bytes": 11498,
+      "sha256": "7e4b5262bb3c8008a2921a266a28546b74ee370bc4284e238c6848c728734940"
+    },
+    {
+      "file": "review-tests-25-final.json",
+      "bytes": 11550,
+      "sha256": "cc85cbc710ac24716f805c217a8b31e2ecd4244a82133e483a1cb237c1c334d9"
+    },
+    {
+      "file": "full-regression.json",
+      "bytes": 11479,
+      "sha256": "6e1abc00e20912b0c582ffbbe7ef31510b4cacd3976cc8d0eb50efd23d7bfadd"
+    },
+    {
+      "file": "clean-site-full-regression.json",
+      "bytes": 7691,
+      "sha256": "273238856d9524a7cd16d5db256c67d9dffa4ff5661169dc0f39ac30c101d4f6"
+    },
+    {
+      "file": "clean-test-site-preparation.json",
+      "bytes": 812,
+      "sha256": "92241669b8202707e696abbfccde7d0847bcd547c53c0aa347735762eb1fd50b"
+    },
+    {
+      "file": "retained-regression-assertions.json",
+      "bytes": 178,
+      "sha256": "8ddae34e296812596ea0699e281b0aff6eee33020b526bbd5be75f0c6813452c"
+    },
+    {
+      "file": "static-checks.json",
+      "bytes": 170,
+      "sha256": "70d4a3e690efeb55c0d6fc35ebd5f9922b3660432d4369ef3ab929cec6d70c3a"
+    },
+    {
+      "file": "production-image-check.json",
+      "bytes": 1353,
+      "sha256": "05b6e3193cc103539a8b79cb5a32930315b185537e6c93e2c9e39bbef419446d"
+    },
+    {
+      "file": "independent-review.md",
+      "bytes": 5278,
+      "sha256": "6318aa23e98a0ee6aec4789ae4b20fb7f71fa816c0220f87ea2bbd440cfb6c83"
+    },
+    {
+      "file": "browser/10-old-payment-dialog-220.png",
+      "bytes": 58906,
+      "sha256": "452f7d4de6d50728e41a8b37e67733634053779a2e6e6333baec41f5b27948f6"
+    },
+    {
+      "file": "browser/11-finance-approved-minus120.png",
+      "bytes": 86752,
+      "sha256": "86f88af3d099c11508c53f764b7fddb8f34ca0bc4c90de4f54d0f8c2ff013413"
+    },
+    {
+      "file": "browser/12-stale-window-rejected.png",
+      "bytes": 43744,
+      "sha256": "435eab125de331a407b90e7850cc20a9f0a64598fae279c113c3f5207cc260e8"
+    },
+    {
+      "file": "browser/15-final-stale-rejected-220-preserved.png",
+      "bytes": 43465,
+      "sha256": "662e14b149b77b771068644efcc7fd7eb34a145f117c8a41c2001c72d222bd03"
+    },
+    {
+      "file": "browser/16-difference220-net100-overpaid120.png",
+      "bytes": 67568,
+      "sha256": "477ce732feae8eaec23e1c823101d8d2f4c00cf42a4d0d39c5f25f82d4fd47e8"
+    },
+    {
+      "file": "browser/17-headcount-correction-100-to120.png",
+      "bytes": 26018,
+      "sha256": "0ff9ba35c198156f04419dd9940e33ea800bf2d47d6290b1024e7722f448956b"
+    },
+    {
+      "file": "browser/18-linked-approved-adjustment-correction.png",
+      "bytes": 24502,
+      "sha256": "0737f13ac0a8d93e617da86c0d376209c5a11ca7d6c55340f863bcdbdc9a4565"
+    },
+    {
+      "file": "browser/19-fixed-work-300-minus30-plus10-net280.png",
+      "bytes": 26190,
+      "sha256": "f8a75366dc551ec6b60d4b43f5b3f63501dad60e02ce230b13357a35eff86344"
+    },
+    {
+      "file": "browser/22-verified-single-day-scope.png",
+      "bytes": 29837,
+      "sha256": "0c12d448dc00393b9a18f436653d2625465712dd58fe6a3ec0bc6a0adbfcba1f"
+    },
+    {
+      "file": "browser/final-stale-http.json",
+      "bytes": 681,
+      "sha256": "0c3edd8619af71217fbe6101b8578331dd361a249b693a171af932c62b63f401"
+    },
+    {
+      "file": "browser/stale-window-inputs.json",
+      "bytes": 216,
+      "sha256": "4698fef8309638f3dd9a4aa0ff5d4aacae6463fd9f136e38c2202535725f44e8"
+    },
+    {
+      "file": "browser/root-browser-check.json",
+      "bytes": 700,
+      "sha256": "0f29a8e650d083fdeb0b4944a4480f830e6f1a1fb86907a5cfe1286c94837ff9"
+    },
+    {
+      "file": "browser/root-browser-console.json",
+      "bytes": 2,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "file": "browser/finance-single-day-report.csv",
+      "bytes": 735,
+      "sha256": "7d222b7121ac35e6b5cedf786c59a3f91bcf4d2632ab18bdbc63b76937f98cd7"
+    },
+    {
+      "file": "browser/17-headcount-correction.txt",
+      "bytes": 4747,
+      "sha256": "bc7c16ed3c47095ac0774815bc30af7849162f1abc98d10e6956326ff497db20"
+    },
+    {
+      "file": "browser/19-fixed-work-correction.txt",
+      "bytes": 5122,
+      "sha256": "7103fd1b28218911c2809083005b4d00bd2f9a2f7734e276ee50a789821c2f8d"
+    },
+    {
+      "file": "browser/22-verified-single-day-scope.txt",
+      "bytes": 5919,
+      "sha256": "6e0f2efacb586ef8a35c271605361d1f10eab8a10f5df1e06f452aab8387fa15"
+    }
+  ]
+}

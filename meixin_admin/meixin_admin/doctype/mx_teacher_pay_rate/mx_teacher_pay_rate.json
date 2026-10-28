@@ -1,0 +1,55 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher Pay Rate",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "min_students",
+  "max_students",
+  "amount",
+  "currency"
+ ],
+ "fields": [
+  {
+   "fieldname": "min_students",
+   "fieldtype": "Int",
+   "label": "人数下限",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "max_students",
+   "fieldtype": "Int",
+   "label": "人数上限（0 为无上限）",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "单节金额（CNY）",
+   "options": "currency",
+   "precision": 2,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "币种",
+   "options": "CNY",
+   "default": "CNY",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "permissions": [],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "istable": 1
+}

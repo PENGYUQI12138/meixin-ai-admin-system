@@ -1,0 +1,151 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher Pay Line",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "kind",
+  "hour_entry",
+  "source_root",
+  "pay_date",
+  "class_size",
+  "roster_size",
+  "headcount_basis",
+  "exception_reason",
+  "description",
+  "scope",
+  "work_key",
+  "amount",
+  "rate_rule",
+  "rule_snapshot",
+  "source_snapshot",
+  "review_issue",
+  "currency"
+ ],
+ "fields": [
+  {
+   "fieldname": "kind",
+   "fieldtype": "Select",
+   "label": "计费类型",
+   "read_only": 1,
+   "options": "课程\n特殊\n固定",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "hour_entry",
+   "fieldtype": "Data",
+   "label": "授课确认",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_root",
+   "fieldtype": "Data",
+   "label": "原始课次修订链",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pay_date",
+   "fieldtype": "Date",
+   "label": "计薪日期",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "class_size",
+   "fieldtype": "Int",
+   "label": "计薪班级人数",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "roster_size",
+   "fieldtype": "Int",
+   "label": "冻结名单人数",
+   "read_only": 1
+  },
+  {
+   "fieldname": "headcount_basis",
+   "fieldtype": "Small Text",
+   "label": "人数与教师归属核对依据",
+   "read_only": 1
+  },
+  {
+   "fieldname": "exception_reason",
+   "fieldtype": "Small Text",
+   "label": "特殊金额原因",
+   "read_only": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "内容与覆盖约定",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scope",
+   "fieldtype": "Select",
+   "label": "固定费用范围",
+   "read_only": 1,
+   "options": "\n全天\n指定"
+  },
+  {
+   "fieldname": "work_key",
+   "fieldtype": "Data",
+   "label": "工作事项标识",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "金额（CNY）",
+   "read_only": 1,
+   "options": "currency",
+   "precision": 2,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rate_rule",
+   "fieldtype": "Data",
+   "label": "生效规则版本",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rule_snapshot",
+   "fieldtype": "Long Text",
+   "label": "规则快照",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_snapshot",
+   "fieldtype": "Long Text",
+   "label": "来源快照",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_issue",
+   "fieldtype": "Small Text",
+   "label": "待核对事项",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "币种",
+   "options": "CNY",
+   "default": "CNY",
+   "read_only": 1,
+   "hidden": 1
+  }
+ ],
+ "permissions": [],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "istable": 1
+}

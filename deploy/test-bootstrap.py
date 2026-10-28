@@ -10,7 +10,7 @@ import time
 
 BENCH = Path("/home/frappe/frappe-bench")
 SITE = os.environ.get("MEIXIN_TEST_SITE", "test_meixin_m1.localhost")
-if SITE not in {"test_meixin_m1.localhost", "test_meixin_m4.localhost"}:
+if SITE not in {"test_meixin_m1.localhost", "test_meixin_m4.localhost", "test_meixin_m4b.localhost"}:
     raise RuntimeError("Refusing unknown test site")
 CONFIG = BENCH / "sites" / SITE / "site_config.json"
 

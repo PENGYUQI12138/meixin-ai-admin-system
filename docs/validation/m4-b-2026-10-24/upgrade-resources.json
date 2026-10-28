@@ -1,0 +1,37 @@
+{
+  "volumes": [
+    "meixin_m4b_upgrade_check_test_db",
+    "meixin_m4b_upgrade_check_test_sites"
+  ],
+  "site": "test_meixin_m4.localhost",
+  "project": "meixin_m4b_upgrade_check",
+  "containers": [
+    {
+      "project": "meixin_m4b_upgrade_check",
+      "ports": {},
+      "image_id": "sha256:77eedd6d4180452d1c2832c2f762e588e20de85c038ed8c148aa77007329a8f3",
+      "image": "frappe/erpnext:v16.35.0",
+      "name": "meixin_m4b_upgrade_check-app-1"
+    },
+    {
+      "project": "meixin_m4b_upgrade_check",
+      "ports": {},
+      "image_id": "sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68",
+      "image": "mariadb:11.8",
+      "name": "meixin_m4b_upgrade_check-db-1"
+    },
+    {
+      "project": "meixin_m4b_upgrade_check",
+      "ports": {},
+      "image_id": "sha256:ad151300731763a711bf517916519e5cc8f035c95139aa1750836048390439d0",
+      "image": "redis:6.2-alpine",
+      "name": "meixin_m4b_upgrade_check-redis-1"
+    }
+  ],
+  "production_project_modified": false,
+  "no_frontend_service_started": true,
+  "networks": [
+    "meixin_m4b_upgrade_check_default"
+  ],
+  "database": "test_meixin_m4"
+}

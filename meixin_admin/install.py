@@ -5,7 +5,9 @@ from frappe.utils import get_system_timezone
 DOCTYPES = ["MX Student", "MX Teacher", "MX Course", "MX Room", "MX Session",
             "MX Session Student", "MX Session Execution", "MX Session Attendance",
             "MX Lesson Consumption Entry", "MX Settings", "MX Package Plan",
-            "MX Student Package", "MX Payment", "MX Lesson Credit Entry", "MX Teacher Hour Entry"]
+            "MX Student Package", "MX Payment", "MX Lesson Credit Entry", "MX Teacher Hour Entry",
+            "MX Teacher Pay Rule", "MX Teacher Pay Rate", "MX Teacher Pay Sheet", "MX Teacher Pay Line",
+            "MX Teacher Pay Coverage", "MX Teacher Pay Adjustment", "MX Teacher Pay Payment"]
 
 
 def before_install():
@@ -41,6 +43,11 @@ def after_migrate():
     frappe.db.add_index("MX Lesson Credit Entry", ["student", "course"], "mx_student_course_credit")
     frappe.db.add_index("MX Teacher Hour Entry", ["execution", "operation_type"], "mx_teacher_execution")
     frappe.db.add_index("MX Teacher Hour Entry", ["teacher", "confirmed_at"], "mx_teacher_hours_period")
+    frappe.db.add_index("MX Teacher Pay Sheet", ["teacher", "from_date", "to_date"], "mx_pay_teacher_period")
+    frappe.db.add_index("MX Teacher Pay Coverage", ["source_root", "parent"], "mx_pay_source_coverage")
+    frappe.db.add_index("MX Teacher Pay Coverage", ["teacher", "pay_date"], "mx_pay_teacher_day")
+    frappe.db.add_index("MX Teacher Pay Adjustment", ["sheet", "docstatus"], "mx_pay_adjustment_sheet")
+    frappe.db.add_index("MX Teacher Pay Payment", ["sheet", "operation_type"], "mx_pay_payment_sheet")
     align_business_user_timezones()
 
 
@@ -50,7 +57,7 @@ def align_business_user_timezones():
     users = {"Administrator"}
     users.update(frappe.get_all(
         "Has Role",
-        filters={"parenttype": "User", "role": ["in", ["Meixin Manager", "Meixin Scheduler"]]},
+        filters={"parenttype": "User", "role": ["in", ["Meixin Manager", "Meixin Scheduler", "Meixin Finance"]]},
         pluck="parent",
     ))
     for user in users:

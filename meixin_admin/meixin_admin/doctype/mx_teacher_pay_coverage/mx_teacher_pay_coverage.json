@@ -1,0 +1,66 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher Pay Coverage",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "teacher",
+  "pay_date",
+  "line_index",
+  "source_root",
+  "hour_entry",
+  "active_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "teacher",
+   "fieldtype": "Data",
+   "label": "教师",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pay_date",
+   "fieldtype": "Date",
+   "label": "覆盖日期",
+   "read_only": 1
+  },
+  {
+   "fieldname": "line_index",
+   "fieldtype": "Int",
+   "label": "明细行号",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_root",
+   "fieldtype": "Data",
+   "label": "原始课次修订链",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hour_entry",
+   "fieldtype": "Data",
+   "label": "授课确认",
+   "read_only": 1
+  },
+  {
+   "fieldname": "active_key",
+   "fieldtype": "Data",
+   "label": "覆盖唯一键",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1,
+   "unique": 1
+  }
+ ],
+ "permissions": [],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 0,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "istable": 1
+}

@@ -1,0 +1,83 @@
+{
+ "doctype": "DocType",
+ "name": "MX Teacher Pay Rule",
+ "module": "Meixin Admin",
+ "engine": "InnoDB",
+ "custom": 0,
+ "field_order": [
+  "effective_from",
+  "rates",
+  "currency",
+  "demo_batch"
+ ],
+ "fields": [
+  {
+   "fieldname": "effective_from",
+   "fieldtype": "Date",
+   "label": "生效日期",
+   "unique": 1,
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "rates",
+   "fieldtype": "Table",
+   "label": "班级人数计价档位",
+   "options": "MX Teacher Pay Rate",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Select",
+   "label": "币种",
+   "read_only": 1,
+   "options": "CNY",
+   "default": "CNY",
+   "reqd": 1
+  },
+  {
+   "fieldname": "demo_batch",
+   "fieldtype": "Data",
+   "label": "测试批次",
+   "read_only": 1,
+   "hidden": 1,
+   "print_hide": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Meixin Manager",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Meixin Scheduler",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Meixin Finance",
+   "read": 1,
+   "select": 1,
+   "report": 1,
+   "export": 1,
+   "create": 1,
+   "write": 1,
+   "submit": 1
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "track_changes": 1,
+ "allow_rename": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "is_submittable": 1,
+ "autoname": "MX-TPR-.#####"
+}

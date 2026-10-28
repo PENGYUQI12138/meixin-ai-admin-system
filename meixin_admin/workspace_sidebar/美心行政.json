@@ -80,6 +80,36 @@
    "label": "机构设置",
    "link_type": "DocType",
    "link_to": "MX Settings"
+  },
+  {
+   "type": "Link",
+   "label": "教师工资结算",
+   "link_type": "DocType",
+   "link_to": "MX Teacher Pay Sheet"
+  },
+  {
+   "type": "Link",
+   "label": "工资规则版本",
+   "link_type": "DocType",
+   "link_to": "MX Teacher Pay Rule"
+  },
+  {
+   "type": "Link",
+   "label": "工资调整事项",
+   "link_type": "DocType",
+   "link_to": "MX Teacher Pay Adjustment"
+  },
+  {
+   "type": "Link",
+   "label": "工资付款与冲正",
+   "link_type": "DocType",
+   "link_to": "MX Teacher Pay Payment"
+  },
+  {
+   "type": "Link",
+   "label": "工资结算报表",
+   "link_type": "Report",
+   "link_to": "教师工资结算概览"
   }
  ]
 }

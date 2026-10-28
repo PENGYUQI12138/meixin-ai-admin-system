@@ -46,11 +46,13 @@ def query_conditions(user=None):
 
 
 def prevent_mx_share(doc, method=None):
+    from meixin_admin.payroll_permissions import PAYROLL_DOCTYPES
+
     # Frappe's explicit DocShare fallback can otherwise override controller
     # denial; M1 grants access only via its business roles, not ad-hoc shares.
     if doc.share_doctype in {"MX Student", "MX Teacher", "MX Course", "MX Room",
                              "MX Session", "MX Session Student", "MX Session Execution",
                              "MX Session Attendance", "MX Lesson Consumption Entry", "MX Settings",
                              "MX Package Plan", "MX Student Package", "MX Payment",
-                             "MX Lesson Credit Entry", "MX Teacher Hour Entry"}:
+                             "MX Lesson Credit Entry", "MX Teacher Hour Entry"} | PAYROLL_DOCTYPES:
         frappe.throw("美心数据不支持单独分享，请由系统管理员按需分配美心业务角色。", frappe.PermissionError)

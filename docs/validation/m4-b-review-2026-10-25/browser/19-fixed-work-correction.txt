@@ -1,0 +1,182 @@
+- generic: 美心行政
+- generic: 美心行政
+- button:
+- generic: 通知
+- link "美心行政":
+  - /url: /desk/美心行政
+  - generic: 美心行政
+- link "教师工资结算":
+  - /url: /desk/mx-teacher-pay-sheet
+  - generic: 教师工资结算
+- link "工资规则版本":
+  - /url: /desk/mx-teacher-pay-rule
+  - generic: 工资规则版本
+- link "工资调整事项":
+  - /url: /desk/mx-teacher-pay-adjustment
+  - generic: 工资调整事项
+- link "工资付款与冲正":
+  - /url: /desk/mx-teacher-pay-payment
+  - generic: 工资付款与冲正
+- link "工资结算报表":
+  - /url: /desk/query-report/教师工资结算概览
+  - generic: 工资结算报表
+- paragraph
+- generic "用户菜单":
+  - generic "TEST-M4B-UAT-Meixin Finance":
+    - generic "TEST-M4B-UAT-Meixin Finance": TF
+- button:
+- list:
+  - link "TEST-M4B-REVIEW-UAT虚构教师":
+    - /url: /desk/mx-teacher-pay-sheet/MX-TPS-00034
+- generic "已批准"
+- button "菜单":
+- generic: 原批准账已冻结。来源变更或金额录入错误追加调整；付款按凭据与核算版本确认，已发生差异如实待财务处理。
+- generic: 教师 *
+- generic: MX-TCH-00046
+- generic: teacher
+- generic: 教师姓名快照 *
+- generic: TEST-M4B-REVIEW-UAT虚构教师
+- generic: teacher_name_snapshot
+- generic: 开始日期 *
+- generic: 2026-10-20
+- generic: from_date
+- generic: 结束日期 *
+- generic: 2026-10-22
+- generic: to_date
+- generic: 核算状态
+- generic: 已批准
+- generic: status
+- strong: 原核算额：
+- text: "300"
+- strong: 已批准调整额：
+- text: "-20"
+- strong: 净应付：
+- text: "280"
+- strong: 有效付款：
+- text: "0"
+- strong: 差额：
+- text: "280"
+- strong: 派生状态：
+- text: 待付款
+- heading "付款与冲正" [level=5]
+- table:
+  - rowgroup:
+    - row "记录 操作 金额 时间 方式 原记录或原因 操作":
+      - columnheader "记录"
+      - columnheader "操作"
+      - columnheader "金额"
+      - columnheader "时间"
+      - columnheader "方式"
+      - columnheader "原记录或原因"
+      - columnheader "操作"
+  - rowgroup:
+    - row "暂无付款登记":
+      - cell "暂无付款登记"
+- heading "来源变更及工资更正事项" [level=5]
+- table:
+  - rowgroup:
+    - row "事项 事件 原因 状态 建议/批准金额":
+      - columnheader "事项"
+      - columnheader "事件"
+      - columnheader "原因"
+      - columnheader "状态"
+      - columnheader "建议/批准金额"
+  - rowgroup:
+    - row "MX-TPA-00008 更正 TEST独立备课工作费用300误填，应按约定更正 已批准 -30":
+      - cell "MX-TPA-00008":
+        - link "MX-TPA-00008":
+          - /url: "#"
+      - cell "更正"
+      - cell "TEST独立备课工作费用300误填，应按约定更正"
+      - cell "已批准"
+      - cell "-30"
+    - row "MX-TPA-00009 更正 TEST已批准调整-30录入错误，应为-20，关联追加10元 已批准 10":
+      - cell "MX-TPA-00009":
+        - link "MX-TPA-00009":
+          - /url: "#"
+      - cell "更正"
+      - cell "TEST已批准调整-30录入错误，应为-20，关联追加10元"
+      - cell "已批准"
+      - cell "10"
+- generic: lines
+- generic: 工资明细
+- checkbox [disabled]
+- generic: 编号
+- generic "计费类型":
+  - generic: 计费类型 *
+- generic "计薪日期":
+  - generic: 计薪日期
+- generic "计薪班级人数":
+  - generic: 计薪班级人数
+- generic "金额（CNY）":
+  - generic: 金额（CNY）
+- checkbox [disabled]
+- generic: "1"
+- generic: 固定
+- generic: 2026-10-22
+- generic: "0"
+- generic: CNY 300.00
+- generic: coverage
+- generic: 来源覆盖关系
+- checkbox [disabled]
+- generic: 编号
+- checkbox [disabled]
+- generic: "1"
+- generic: 原核算总额（CNY）
+- generic: CNY 300.00
+- generic: total_amount
+- generic: 币种 *
+- generic: CNY
+- generic: currency
+- generic: 行政核对人
+- generic: Administrator
+- generic: checked_by
+- generic: 行政核对时间
+- generic: 2026-10-25 12:16:13
+- generic: Asia/Chongqing
+- generic: checked_at
+- generic: 财务批准人
+- generic: Administrator
+- generic: approved_by
+- generic: 财务批准时间
+- generic: 2026-10-25 12:16:13
+- generic: Asia/Chongqing
+- generic: approved_at
+- generic: 评论
+- generic "TEST-M4B-UAT-Meixin Finance":
+  - generic "TEST-M4B-UAT-Meixin Finance": TF
+- generic: comment
+- text: 输入回复或评论
+- paragraph
+- text: ×
+- heading "活动" [level=4]
+- link "Administrator":
+  - /url: /desk/user/Administrator
+- text: 最新修订了本单据
+- generic: · 2小时前
+- link "Administrator":
+  - /url: /desk/user/Administrator
+- text: 创建了本单据
+- generic: · 2小时前
+- button:
+- generic: TEST-M4B-REVIEW-UAT虚构教师
+- generic: MX-TPS-00034
+- generic: 分配
+- button:
+- text: 附件
+- button:
+- generic: 标签
+- button:
+- generic: 分享
+- button:
+- list:
+  - text: Last Edited By
+  - link "Administrator":
+    - /url: /desk/user/Administrator
+  - generic "2026-10-25 12:16:13": 2小时前
+  - text: 由
+  - link "Administrator":
+    - /url: /desk/user/Administrator
+  - text: 创建
+  - generic "2026-10-25 12:16:13": 2小时前
+- contentinfo

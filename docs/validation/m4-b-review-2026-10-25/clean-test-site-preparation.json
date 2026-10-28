@@ -1,0 +1,32 @@
+{
+  "site": "test_meixin_m4b.localhost",
+  "database": "test_meixin_m4b",
+  "independent_project": "meixin_m4b_upgrade_check",
+  "shared_with_production": false,
+  "new_test_site_only": true,
+  "existing_history_site_modified": false,
+  "apps": [
+    "frappe",
+    "erpnext",
+    "meixin_admin"
+  ],
+  "frappe": "16.34.0",
+  "erpnext": "16.35.0",
+  "time_zone": "Asia/Chongqing",
+  "initial_business_counts": {
+    "MX Student": 0,
+    "MX Teacher": 0,
+    "MX Course": 0,
+    "MX Room": 0,
+    "MX Session": 0,
+    "MX Session Execution": 0,
+    "MX Teacher Hour Entry": 0,
+    "MX Teacher Pay Rule": 0,
+    "MX Teacher Pay Sheet": 0,
+    "MX Teacher Pay Adjustment": 0,
+    "MX Teacher Pay Payment": 0,
+    "MX Lesson Credit Entry": 0,
+    "MX Payment": 0
+  },
+  "dependencies_downloaded_or_upgraded": false
+}

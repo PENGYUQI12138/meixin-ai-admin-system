@@ -1,0 +1,379 @@
+{
+  "mode": "review",
+  "site": "test_meixin_m4.localhost",
+  "scope": "real MariaDB/Frappe dispatcher/transaction tests, not browser HTTP",
+  "tests": {
+    "site": "test_meixin_m4.localhost",
+    "tests_run": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "old_history_unchanged": true,
+  "before": {
+    "facts": {
+      "MX Student": {
+        "count": 5,
+        "sha256": "ec16d4a15d50691dc133eb815a9c3cb70d9ee8d70fd426afbca6d6683ff43e1b"
+      },
+      "MX Teacher": {
+        "count": 1,
+        "sha256": "75ba4fa8727ecc00807157b30788503829fabb56fc648f6227e2df985e713806"
+      },
+      "MX Course": {
+        "count": 1,
+        "sha256": "38c20b7376e5c59f051e472bbde3bb8a24bbe01519817cb63e9b20d164e8695d"
+      },
+      "MX Room": {
+        "count": 1,
+        "sha256": "24592af9357a42536bdc6ce3bddffe7c6932be32fae6fc346a93754295731729"
+      },
+      "MX Session": {
+        "count": 2,
+        "sha256": "bad597d57b4ea8ad527d3946b937f62485e591f7c6d2c96255b210528e3410d2"
+      },
+      "MX Session Student": {
+        "count": 9,
+        "sha256": "f97a1b18d043d530c64d61ff59681d1824394aa1164d9a4344f0cdd8e993ccf0"
+      },
+      "MX Session Execution": {
+        "count": 2,
+        "sha256": "bb2347e5bb01ad80993eb3b0111119219c7c4f77bc5768be50b8e1d6e6805122"
+      },
+      "MX Session Attendance": {
+        "count": 9,
+        "sha256": "137b8f5ca2af2d933da1b89dce60eceb2ef6601a00bd8bd59c05bb9d25bd76bb"
+      },
+      "MX Lesson Consumption Entry": {
+        "count": 9,
+        "sha256": "eb51fe8d595960640f279ebd6e8b90e1afb52539c166ff2e698213b638b04fec"
+      },
+      "MX Package Plan": {
+        "count": 1,
+        "sha256": "729168510745b2eb2a7117f1455553f2b002b53680a662ac87dbbf4bee44e117"
+      },
+      "MX Student Package": {
+        "count": 1,
+        "sha256": "ba46cf3c0b26a81ae04ea2feb20574eea3feb57713545ba39c8c2711458e0827"
+      },
+      "MX Payment": {
+        "count": 1,
+        "sha256": "1407e8b5f49a60a1f470f1b03cdacbe53d87568785b8bf71a28cf7d134fcfa54"
+      },
+      "MX Lesson Credit Entry": {
+        "count": 3,
+        "sha256": "2100be06eb87c2308ccc67b726fc413559dbe2879c8144de84c75b7059bb70a3"
+      },
+      "MX Teacher Hour Entry": {
+        "count": 2,
+        "sha256": "4786a7be255cc80aab70ee0a122383221837e4e809f8d30f994cbc7d25ac909a"
+      },
+      "MX Settings": {
+        "count": 13,
+        "sha256": "648c71c8c270a4cc92a4346888191f0d2310c89fd059709a28bc00dc8fdfde19"
+      }
+    },
+    "permissions": {
+      "count": 25,
+      "sha256": "fc76ab973d75dabc9a07ddb92d3e2c4ba867fb1bd3f7934cb0d67d27069b60b8"
+    },
+    "role_assignments": {
+      "Administrator": [
+        "Academics User",
+        "Accounts Manager",
+        "Accounts User",
+        "Administrator",
+        "All",
+        "Analytics",
+        "Auditor",
+        "Dashboard Manager",
+        "Delivery Manager",
+        "Delivery User",
+        "Desk User",
+        "Fleet Manager",
+        "Fulfillment User",
+        "Guest",
+        "HR Manager",
+        "HR User",
+        "Inbox User",
+        "Item Manager",
+        "Knowledge Base Contributor",
+        "Knowledge Base Editor",
+        "Maintenance Manager",
+        "Maintenance User",
+        "Manufacturing Manager",
+        "Manufacturing User",
+        "Marketing Manager",
+        "Meixin Manager",
+        "Meixin Scheduler",
+        "Newsletter Manager",
+        "Prepared Report User",
+        "Projects Manager",
+        "Projects User",
+        "Purchase Manager",
+        "Purchase Master Manager",
+        "Purchase User",
+        "Quality Manager",
+        "Report Manager",
+        "Sales Manager",
+        "Sales Master Manager",
+        "Sales User",
+        "Script Manager",
+        "Stock Manager",
+        "Stock User",
+        "Support Team",
+        "System Manager",
+        "Translator",
+        "Website Manager",
+        "Workspace Manager"
+      ],
+      "m4b-upgrade-admin@example.invalid": [
+        "Meixin Manager"
+      ],
+      "m4b-upgrade-scheduler@example.invalid": [
+        "Meixin Scheduler"
+      ]
+    },
+    "balances": {
+      "MX-SPK-00001": {
+        "student": "MX-STU-00001",
+        "course": "MX-CRS-00001",
+        "course_name": "升级演练虚构课程",
+        "effective_from": "2020-01-01",
+        "expires_on": "",
+        "status": "生效",
+        "deal_amount": "¥2,000.00",
+        "paid_amount": "¥2,000.00",
+        "paid_amount_value": "2000.00",
+        "due_amount": "¥0.00",
+        "due_amount_value": "0.00",
+        "remaining_credits": 18,
+        "payments": [
+          {
+            "name": "MX-PAY-00001",
+            "paid_at": "2020-01-02 08:00:00",
+            "operation_type": "收款",
+            "payment_method": "现金",
+            "cash_effect": "¥2,000.00",
+            "amount": "¥2,000.00",
+            "credits_reclaimed": 0,
+            "note": "",
+            "reversal_of": ""
+          }
+        ],
+        "credits": [
+          {
+            "name": "MX-LCR-00003",
+            "creation": "2026-10-24 09:59:48.667258",
+            "operation_type": "M2 课消扣减",
+            "effect": -1,
+            "source_doctype": "MX Lesson Consumption Entry",
+            "source_name": "MX-LCE-00005",
+            "reason": ""
+          },
+          {
+            "name": "MX-LCR-00002",
+            "creation": "2026-10-24 09:59:48.571708",
+            "operation_type": "M2 课消扣减",
+            "effect": -1,
+            "source_doctype": "MX Lesson Consumption Entry",
+            "source_name": "MX-LCE-00001",
+            "reason": ""
+          },
+          {
+            "name": "MX-LCR-00001",
+            "creation": "2026-10-24 09:59:48.332659",
+            "operation_type": "购买授予",
+            "effect": 20,
+            "source_doctype": "MX Student Package",
+            "source_name": "MX-SPK-00001",
+            "reason": ""
+          }
+        ]
+      }
+    }
+  },
+  "after": {
+    "facts": {
+      "MX Student": {
+        "count": 5,
+        "sha256": "ec16d4a15d50691dc133eb815a9c3cb70d9ee8d70fd426afbca6d6683ff43e1b"
+      },
+      "MX Teacher": {
+        "count": 1,
+        "sha256": "75ba4fa8727ecc00807157b30788503829fabb56fc648f6227e2df985e713806"
+      },
+      "MX Course": {
+        "count": 1,
+        "sha256": "38c20b7376e5c59f051e472bbde3bb8a24bbe01519817cb63e9b20d164e8695d"
+      },
+      "MX Room": {
+        "count": 1,
+        "sha256": "24592af9357a42536bdc6ce3bddffe7c6932be32fae6fc346a93754295731729"
+      },
+      "MX Session": {
+        "count": 2,
+        "sha256": "bad597d57b4ea8ad527d3946b937f62485e591f7c6d2c96255b210528e3410d2"
+      },
+      "MX Session Student": {
+        "count": 9,
+        "sha256": "f97a1b18d043d530c64d61ff59681d1824394aa1164d9a4344f0cdd8e993ccf0"
+      },
+      "MX Session Execution": {
+        "count": 2,
+        "sha256": "bb2347e5bb01ad80993eb3b0111119219c7c4f77bc5768be50b8e1d6e6805122"
+      },
+      "MX Session Attendance": {
+        "count": 9,
+        "sha256": "137b8f5ca2af2d933da1b89dce60eceb2ef6601a00bd8bd59c05bb9d25bd76bb"
+      },
+      "MX Lesson Consumption Entry": {
+        "count": 9,
+        "sha256": "eb51fe8d595960640f279ebd6e8b90e1afb52539c166ff2e698213b638b04fec"
+      },
+      "MX Package Plan": {
+        "count": 1,
+        "sha256": "729168510745b2eb2a7117f1455553f2b002b53680a662ac87dbbf4bee44e117"
+      },
+      "MX Student Package": {
+        "count": 1,
+        "sha256": "ba46cf3c0b26a81ae04ea2feb20574eea3feb57713545ba39c8c2711458e0827"
+      },
+      "MX Payment": {
+        "count": 1,
+        "sha256": "1407e8b5f49a60a1f470f1b03cdacbe53d87568785b8bf71a28cf7d134fcfa54"
+      },
+      "MX Lesson Credit Entry": {
+        "count": 3,
+        "sha256": "2100be06eb87c2308ccc67b726fc413559dbe2879c8144de84c75b7059bb70a3"
+      },
+      "MX Teacher Hour Entry": {
+        "count": 2,
+        "sha256": "4786a7be255cc80aab70ee0a122383221837e4e809f8d30f994cbc7d25ac909a"
+      },
+      "MX Settings": {
+        "count": 13,
+        "sha256": "648c71c8c270a4cc92a4346888191f0d2310c89fd059709a28bc00dc8fdfde19"
+      }
+    },
+    "permissions": {
+      "count": 25,
+      "sha256": "fc76ab973d75dabc9a07ddb92d3e2c4ba867fb1bd3f7934cb0d67d27069b60b8"
+    },
+    "role_assignments": {
+      "Administrator": [
+        "Academics User",
+        "Accounts Manager",
+        "Accounts User",
+        "Administrator",
+        "All",
+        "Analytics",
+        "Auditor",
+        "Dashboard Manager",
+        "Delivery Manager",
+        "Delivery User",
+        "Desk User",
+        "Fleet Manager",
+        "Fulfillment User",
+        "Guest",
+        "HR Manager",
+        "HR User",
+        "Inbox User",
+        "Item Manager",
+        "Knowledge Base Contributor",
+        "Knowledge Base Editor",
+        "Maintenance Manager",
+        "Maintenance User",
+        "Manufacturing Manager",
+        "Manufacturing User",
+        "Marketing Manager",
+        "Meixin Manager",
+        "Meixin Scheduler",
+        "Newsletter Manager",
+        "Prepared Report User",
+        "Projects Manager",
+        "Projects User",
+        "Purchase Manager",
+        "Purchase Master Manager",
+        "Purchase User",
+        "Quality Manager",
+        "Report Manager",
+        "Sales Manager",
+        "Sales Master Manager",
+        "Sales User",
+        "Script Manager",
+        "Stock Manager",
+        "Stock User",
+        "Support Team",
+        "System Manager",
+        "Translator",
+        "Website Manager",
+        "Workspace Manager"
+      ],
+      "m4b-upgrade-admin@example.invalid": [
+        "Meixin Manager"
+      ],
+      "m4b-upgrade-scheduler@example.invalid": [
+        "Meixin Scheduler"
+      ]
+    },
+    "balances": {
+      "MX-SPK-00001": {
+        "student": "MX-STU-00001",
+        "course": "MX-CRS-00001",
+        "course_name": "升级演练虚构课程",
+        "effective_from": "2020-01-01",
+        "expires_on": "",
+        "status": "生效",
+        "deal_amount": "¥2,000.00",
+        "paid_amount": "¥2,000.00",
+        "paid_amount_value": "2000.00",
+        "due_amount": "¥0.00",
+        "due_amount_value": "0.00",
+        "remaining_credits": 18,
+        "payments": [
+          {
+            "name": "MX-PAY-00001",
+            "paid_at": "2020-01-02 08:00:00",
+            "operation_type": "收款",
+            "payment_method": "现金",
+            "cash_effect": "¥2,000.00",
+            "amount": "¥2,000.00",
+            "credits_reclaimed": 0,
+            "note": "",
+            "reversal_of": ""
+          }
+        ],
+        "credits": [
+          {
+            "name": "MX-LCR-00003",
+            "creation": "2026-10-24 09:59:48.667258",
+            "operation_type": "M2 课消扣减",
+            "effect": -1,
+            "source_doctype": "MX Lesson Consumption Entry",
+            "source_name": "MX-LCE-00005",
+            "reason": ""
+          },
+          {
+            "name": "MX-LCR-00002",
+            "creation": "2026-10-24 09:59:48.571708",
+            "operation_type": "M2 课消扣减",
+            "effect": -1,
+            "source_doctype": "MX Lesson Consumption Entry",
+            "source_name": "MX-LCE-00001",
+            "reason": ""
+          },
+          {
+            "name": "MX-LCR-00001",
+            "creation": "2026-10-24 09:59:48.332659",
+            "operation_type": "购买授予",
+            "effect": 20,
+            "source_doctype": "MX Student Package",
+            "source_name": "MX-SPK-00001",
+            "reason": ""
+          }
+        ]
+      }
+    }
+  }
+}

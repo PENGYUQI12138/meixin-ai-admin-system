@@ -1,0 +1,20 @@
+[
+  {
+    "event": "Network.requestWillBeSent",
+    "url": "http://localhost:18085/api/method/meixin_admin.teacher_payroll.record_pay_payment",
+    "request": {
+      "sheet": "MX-TPS-00035",
+      "actual_amount": "220",
+      "balance_version": "97f094715a50b95bf17a0c085af2891d361f1b548025bc08a5b10493e06841f4",
+      "paid_at": "2026-10-25 12:20:31",
+      "payment_method": "现金",
+      "reference_no": "TEST-REVIEW-actual220-receipt002",
+      "request_id": "672ea16e-09b6-4afd-90d8-60b79b48891b"
+    }
+  },
+  {
+    "event": "Network.responseReceived",
+    "url": "http://localhost:18085/api/method/meixin_admin.teacher_payroll.record_pay_payment",
+    "status": 417
+  }
+]
