@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-28",
+  "accepted_head": "811ddf2642b13400f911d83015af4291227427e1",
+  "base": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+  "main_changed": false,
+  "workspace_clean": true,
+  "merge_conflicts": false,
+  "preview_tree": "1ebecc05cc8d0b86fbe1990dced992130cd1c57a",
+  "accepted_tree": "1ebecc05cc8d0b86fbe1990dced992130cd1c57a",
+  "check_run": {
+    "id": 122572774119,
+    "head_sha": "811ddf2642b13400f911d83015af4291227427e1",
+    "conclusion": "success",
+    "url": "https://github.com/PENGYUQI12138/meixin-ai-admin-system/actions/runs/40614209996/job/122572774119"
+  },
+  "draft_before": true
+}

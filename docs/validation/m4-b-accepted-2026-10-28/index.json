@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-28",
+  "accepted_head": "811ddf2642b13400f911d83015af4291227427e1",
+  "merge_commit": "5084bdb23f169b5dc14566143b451616ff4d07b8",
+  "user_reported_acceptance": true,
+  "invented_manual_logs": false,
+  "business_tests_rerun_for_archive": false,
+  "files": [
+    {
+      "file": "exact-head-premerge.json",
+      "bytes": 619,
+      "sha256": "e50a8a071d7a9b6970d6cb4dd2e288b8545f82f0aedfcbe5b48f3dcfbcfdacfa"
+    },
+    {
+      "file": "merge-main-ci.json",
+      "bytes": 225,
+      "sha256": "1a844c1f74973983cb04ce98487f47801ca0f57bc732cfab699be0aa9d86986a"
+    },
+    {
+      "file": "merge-verification.json",
+      "bytes": 697,
+      "sha256": "77adb3c9b02132b5b46509c032e82eb3cbab42f65ccee145dc2aa52dcf4063c0"
+    },
+    {
+      "file": "pr-ci-before.json",
+      "bytes": 1076,
+      "sha256": "8a187efd476c98e4c5baba589db828f6838971ebf15de76da15c3c9aa2d808e8"
+    },
+    {
+      "file": "preservation-preseal.json",
+      "bytes": 5338,
+      "sha256": "dcd0fec83a500c9e2fdcd3bbf914d0059c8fb708d4ef405de67dcdd498cb7562"
+    },
+    {
+      "file": "technical-final-review.md",
+      "bytes": 3742,
+      "sha256": "30b902b9c1d58a8ea4b5613f8885a3962a0cf1585acda7a7c9fed75b78a8751d"
+    },
+    {
+      "file": "user-acceptance.md",
+      "bytes": 897,
+      "sha256": "9adf701e54630d0fafa1a4553f499acc963728ffce1c131000d7b55e36a24afa"
+    }
+  ]
+}

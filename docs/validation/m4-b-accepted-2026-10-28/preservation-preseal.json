@@ -1,0 +1,134 @@
+{
+  "date": "2026-10-28",
+  "scope": "read-only Docker metadata and isolated backup file inventory; no database queries",
+  "containers": [
+    {
+      "name": "/frappe_docker-backend-1",
+      "id": "3fe7cdcaa987c1847c21292493e57bd98f38be13ebf2551f723e66bee0191b64",
+      "image": "meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0",
+      "revision": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "state": "running",
+      "mounts_sha256": "add59994f34544d01b61455e65fd40e22ce4168cb87469a1e498f0ebfdd08c77"
+    },
+    {
+      "name": "/frappe_docker-frontend-1",
+      "id": "8bd404d57198297aa2e12d432b85fc95a7c283a980169b5313e29c0b6528c4fd",
+      "image": "meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0",
+      "revision": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "state": "running",
+      "mounts_sha256": "add59994f34544d01b61455e65fd40e22ce4168cb87469a1e498f0ebfdd08c77"
+    },
+    {
+      "name": "/frappe_docker-queue-short-1",
+      "id": "75475229dd000d2f5f618b5579c1857e668483d1460c90ce03164c8927f2cef0",
+      "image": "meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0",
+      "revision": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "state": "running",
+      "mounts_sha256": "add59994f34544d01b61455e65fd40e22ce4168cb87469a1e498f0ebfdd08c77"
+    },
+    {
+      "name": "/frappe_docker-queue-long-1",
+      "id": "fef07d77acc5a6be0afbc5a4d45ed5f3bbf32a7f323530e3f556610af4a5e209",
+      "image": "meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0",
+      "revision": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "state": "running",
+      "mounts_sha256": "add59994f34544d01b61455e65fd40e22ce4168cb87469a1e498f0ebfdd08c77"
+    },
+    {
+      "name": "/frappe_docker-scheduler-1",
+      "id": "ef9f23c85d03ac603373ffa2b80b71f8aa8269478901a3869f9323d0c3d7daa4",
+      "image": "meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0",
+      "revision": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "state": "running",
+      "mounts_sha256": "add59994f34544d01b61455e65fd40e22ce4168cb87469a1e498f0ebfdd08c77"
+    },
+    {
+      "name": "/frappe_docker-websocket-1",
+      "id": "a0a043737db7260ddc1c59a3b772a24ec2933c9c3f3e11e5a120ed45e716dcbe",
+      "image": "meixin-admin:m4a-6fae2b9-firstlaunch-frappe16.34.0",
+      "revision": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "state": "running",
+      "mounts_sha256": "add59994f34544d01b61455e65fd40e22ce4168cb87469a1e498f0ebfdd08c77"
+    },
+    {
+      "name": "/meixin_m4b_upgrade_check-app-1",
+      "id": "afe7a6716b485bfd6bca7daa6ddee3b439732aa79e6ce749804575a4c1cece14",
+      "image": "frappe/erpnext:v16.35.0",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "405b33a09a75e910fd97bca760718fc1b81a7df61ed9ee109fe4f97bb75afc0d"
+    },
+    {
+      "name": "/meixin_m4b_upgrade_check-db-1",
+      "id": "d5a3ced08f879430e9a3faf0f98b7c5255ce3744ea369250a2b2cb74123e7abd",
+      "image": "mariadb:11.8",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "a4109d58c488524c47445a92d7393f9fdd1079d0ee05d7a6a66d54dc8e211439"
+    },
+    {
+      "name": "/meixin_m4b_upgrade_check-redis-1",
+      "id": "74e7544ac0cbf5b0de9b855cc906fa5303e4309e49a2e825baf5f9517a3ec046",
+      "image": "redis:6.2-alpine",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "bccb65826d1c0d5fa9c7b1474222101e70e247d057f816557fbaccc141a64fda"
+    },
+    {
+      "name": "/meixin_m4b_test-app-1",
+      "id": "14ceba3d3763ca8e25f23c13743dceabc830dcee56ea9ebc3b0f4f9e7c3bd385",
+      "image": "frappe/erpnext:v16.35.0",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "ca38c54d6518873d6ea028bb32ae81e59e993deff03b57aafaf6e206cca3450b"
+    },
+    {
+      "name": "/meixin_m4b_test-db-1",
+      "id": "4771c4d47577f0f39131a36e47d323f5bf07ba507231166a3bc5e4d090ff9d8b",
+      "image": "mariadb:11.8",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "89604d2100191b7a60d955164058953380079e98a4dfd7641328b9b4493686dc"
+    },
+    {
+      "name": "/meixin_m4b_test-redis-1",
+      "id": "d57b6c3e846acb770102d1f0a910b73b0032d900f629117c186b7a499a539a80",
+      "image": "redis:6.2-alpine",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "384ecbad815c9af702c596080517c55f5510b63968646c1615dc27860edd517f"
+    },
+    {
+      "name": "/meixin_m4b_test-frontend-1",
+      "id": "81f83874642abd37f5439d87ff1754aeff5a447b2ea4542fdc6591aab9c2af84",
+      "image": "frappe/erpnext:v16.35.0",
+      "revision": null,
+      "state": "running",
+      "mounts_sha256": "5b29110ea7f4a0d1717e40da37240617ab4fce4020e5c6db409d4178e1410088"
+    }
+  ],
+  "isolated_backup_inventories": [
+    {
+      "container": "meixin_m4b_upgrade_check-app-1",
+      "site": "test_meixin_m4.localhost",
+      "files": 4,
+      "inventory_sha256": "d34262b23d25fea28f350a062bef3a70ad7ca78c452bb1cb3cd99b9b4baa6b10"
+    },
+    {
+      "container": "meixin_m4b_test-app-1",
+      "site": "test_meixin_m4b.localhost",
+      "files": 4,
+      "inventory_sha256": "a9ed6c68a77237fadcb0054420d4170e701319a32159c8950de69627e77440a2"
+    }
+  ],
+  "original_checkout_heads": [
+    {
+      "head": "811ddf2642b13400f911d83015af4291227427e1",
+      "clean": true
+    },
+    {
+      "head": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+      "clean": true
+    }
+  ]
+}

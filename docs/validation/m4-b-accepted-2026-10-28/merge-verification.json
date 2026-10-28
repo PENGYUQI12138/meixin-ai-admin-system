@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-28",
+  "url": "https://github.com/PENGYUQI12138/meixin-ai-admin-system/pull/4",
+  "accepted_head": "811ddf2642b13400f911d83015af4291227427e1",
+  "main_before": "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+  "merge_commit": "5084bdb23f169b5dc14566143b451616ff4d07b8",
+  "merge_tree": "1ebecc05cc8d0b86fbe1990dced992130cd1c57a",
+  "parents": [
+    "6fae2b9c978b3c812a0d999d01bec2dade9c3f80",
+    "811ddf2642b13400f911d83015af4291227427e1"
+  ],
+  "accepted_tree": "1ebecc05cc8d0b86fbe1990dced992130cd1c57a",
+  "accepted_tree_identical": true,
+  "merged": true,
+  "draft": false,
+  "merged_at": "2026-10-28T09:07:35Z",
+  "merge_method": "merge",
+  "production_deployment": false
+}
